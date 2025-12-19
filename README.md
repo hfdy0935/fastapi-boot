@@ -1,4 +1,4 @@
-<div align='center' style="font-weight:bolder;font-size:60px">FastAPIBoot</div>
+<div align='center' style="font-weight:bolder;font-size:100px;color:green">FastAPIBoot</div>
 
 
 &emsp;&emsp;简单易用、功能强大的FastAPI工具库，支持CBV、依赖注入、声明式公共路由依赖和生命周期等写法，为**提高效率**而生。
