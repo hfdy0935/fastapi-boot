@@ -16,7 +16,7 @@ def get_call_filename(layer: int = 1):
 
 def match_path(pattern: str | re.Pattern, target: str):
     if isinstance(pattern, str):
-        return target.startswith(pattern)
+        return target == pattern or (target.startswith(pattern) and target[len(pattern)] == '.')
     return re.match(pattern, target) is not None
 
 
