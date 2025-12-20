@@ -258,7 +258,7 @@ class Select(Sql):
         @wraps(func)  # type: ignore
         async def wrapper(*args: P.args, **kwds: P.kwargs):
             lines, resp = await super_class.__call__(cast(Callable[P, Coroutine[Any, Any, None | tuple[int, list[dict]]]], func))(*args, **kwds)
-            if anno is None:
+            if anno is None or anno is list:
                 return resp
             elif get_origin(anno) is list:
                 arg = get_args(anno)[0]
