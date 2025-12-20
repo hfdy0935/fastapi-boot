@@ -35,7 +35,8 @@ jobs:
     - name: Run pytest
       # uses: dariocurr/pytest-summary@v2.4
       run: |
-        uv run pytest --junit-xml=.test_report.xml tests
+        cd tests
+        uv run pytest --junit-xml=.test_report.xml
       # with:
         # the pytest extensions to install along pytest
         # extensions: # optional
