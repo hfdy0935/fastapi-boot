@@ -14,9 +14,10 @@ from starlette.types import ASGIApp, Lifespan
 
 from .const import (
     PropNameConstant,
-    BlankPlaceholder,
+    UseMiddlewareReturnValuePlaceholder,
     dep_store,
-    task_store
+    task_store,
+    use_dep_record_store
 )
 from .DI import inject_init_deps_and_get_instance
 from .model import (
@@ -65,10 +66,10 @@ def get_use_result(cls: type[RouterCls]):
     cls_anno: dict = cls.__dict__.get('__annotations__', {})
     use_middleware_records: list[UseMiddlewareRecord] = []
     for k, v in getmembers(cls):
-        if hasattr(v, PropNameConstant.USE_DEP):
+        if use_dep_record_store.has(v):
             use_dep_dict.update({k: (cls_anno.get(k), v)})
         elif (
-                isinstance(v, BlankPlaceholder)
+                isinstance(v, UseMiddlewareReturnValuePlaceholder)
                 and (attr := getattr(v, PropNameConstant.USE_MIDDLEWARE))
                 and isinstance(attr, UseMiddlewareRecord)
         ):

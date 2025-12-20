@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from inspect import Parameter, _empty, signature, isclass
 import time
-from typing import Annotated, TypeVar, cast, get_args, get_origin, no_type_check, overload
+from typing import Annotated, Any, TypeVar, cast, get_args, get_origin, overload
 
 from .const import dep_store, app_store, task_store
 from .model import DependencyNotFoundException, InjectFailException, AppRecord
@@ -11,7 +11,7 @@ T = TypeVar('T')
 
 
 def _inject(app_record: AppRecord, tp: type[T], name: str | None) -> T:
-    """inject dependency by type or name
+    """注入单个依赖
 
     Args:
         app_record (AppRecord)
@@ -19,7 +19,7 @@ def _inject(app_record: AppRecord, tp: type[T], name: str | None) -> T:
         name (str | None)
 
     Returns:
-        T: instance
+        T: 注入的依赖
     """
     start = time.time()
 
@@ -41,41 +41,47 @@ def _inject(app_record: AppRecord, tp: type[T], name: str | None) -> T:
 
 
 def inject_params_deps(app_record: AppRecord, params: list[Parameter]):
-    """解析参数，注入依赖
+    """
+
     Args:
-        params (list[Parameter]): 参数列表
+        app_record (AppRecord): app_record
+        params (list[Parameter]): params
+
+    Raises:
+        InjectFailException: _description_
+
+    Returns:
+        _type_: _description_
     """
     position_params = []
     kw_params = {}
+
+    def add_param(param: Parameter, value: Any):
+        if is_position_only_param(param):
+            position_params.append(value)
+        else:
+            kw_params.update({param.name: value})
+
     for param in params:
         # 1. with default
         if param.default != _empty:
-            if is_position_only_param(param):
-                position_params.append(param.default)
-            else:
-                kw_params.update({param.name: param.default})
+            add_param(param, param.default)
         else:
-            # 2. with default
+            # 2. without default
+            # 2.1 no annotation
             if param.annotation == _empty:
-                # 2.1 no annotation
                 raise InjectFailException(
-                    f'The annotation of param {param.name} is missing, add an annotation or give it a default value'
+                    f'The annotation of param "{param.name}" is missing, add an annotation or give a default value'
                 )
             # 2.2. with Annotated, has type and name
             if get_origin(param.annotation) == Annotated:
                 tp, name, *_ = get_args(param.annotation)
                 ins = _inject(app_record, tp, name)
-                if is_position_only_param(param):
-                    position_params.append(ins)
-                else:
-                    kw_params.update({param.name: ins})
+                add_param(param, ins)
             else:
                 # 2.2.2 only type, no name
                 ins = _inject(app_record, param.annotation, None)
-                if is_position_only_param(param):
-                    position_params.append(ins)
-                else:
-                    kw_params.update({param.name: ins})
+                add_param(param, ins)
     return position_params, kw_params
 
 
@@ -83,13 +89,12 @@ def inject_params_deps(app_record: AppRecord, params: list[Parameter]):
 
 
 def collect_bean(app_record: AppRecord, func: Callable, name: str | None = None):
-    """
-    1. run function decorated by Bean decorator
-    2. add the result to deps_store
+    """收集Bean装饰的函数运行结果
 
     Args:
-        func (Callable): func
-        name (str | None, optional): name of dep
+        app_record (AppRecord): _description_
+        func (Callable): _description_
+        name (str | None, optional): _description_. Defaults to None.
     """
     params = list(signature(func).parameters.values())
     return_annotations = signature(func).return_annotation
@@ -101,15 +106,12 @@ def collect_bean(app_record: AppRecord, func: Callable, name: str | None = None)
 
 @overload
 def Bean(func_or_name: str): ...
-
-
 @overload
 def Bean(func_or_name: Callable[..., T]): ...
 
 
-@no_type_check
-def Bean(func_or_name: str | Callable[..., T]) -> Callable[..., T]:
-    """A decorator, will collect the return value of the func decorated by Bean
+def Bean(func_or_name: str | Callable[..., T]):
+    """用于装饰函数，讲返回值收集为依赖；最好显式写出函数返回类型
     # Example
     1. collect by `type`
     ```python
@@ -118,7 +120,7 @@ def Bean(func_or_name: str | Callable[..., T]) -> Callable[..., T]:
         bar: str
 
     @Bean
-    def _():
+    def _() -> Foo:
         return Foo('baz')
     ```
 
@@ -129,11 +131,11 @@ def Bean(func_or_name: str | Callable[..., T]) -> Callable[..., T]:
         age: int = Field(gt=0)
 
     @Bean('user')
-    def _():
+    def _() -> User:
         return User(name='zs', age=20)
 
     @Bean('user2)
-    def _():
+    def _() -> User:
         return User(name='zs', age=21)
     ```
     """
@@ -158,13 +160,19 @@ def inject_init_deps_and_get_instance(app_record: AppRecord, cls: type[T]) -> T:
         i for i in old_params if i.kind not in (Parameter.VAR_KEYWORD, Parameter.VAR_POSITIONAL)
     ]  # *args、**kwargs
     calling_params = inject_params_deps(app_record, new_params)
+    if hasattr(cls.__init__, '__globals__'):
+        cls.__init__.__globals__.update({cls.__name__: cls})
     return cls(*calling_params[0], **calling_params[1])
 
 
 def collect_dep(app_record: AppRecord, cls: type, name: str | None = None):
-    """init class decorated by Inject decorator and collect it's instance as dependency"""
-    if hasattr(cls.__init__, '__globals__'):
-        cls.__init__.__globals__[cls.__name__] = cls  # type: ignore
+    """收集cls初始化时需要的依赖
+
+    Args:
+        app_record (AppRecord): _description_
+        cls (type): _description_
+        name (str | None, optional): _description_. Defaults to None.
+    """
     instance = inject_init_deps_and_get_instance(app_record, cls)
     dep_store.add_dep(cls, name, instance)
 
@@ -178,7 +186,7 @@ def Injectable(class_or_name: type[T]) -> type[T]: ...
 
 
 def Injectable(class_or_name: str | type[T]):
-    """decorate a class and collect it's instance as a dependency
+    """初始化并把实例收集为依赖
     # Example
     ```python
     @Injectable

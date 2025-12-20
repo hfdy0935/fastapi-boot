@@ -16,8 +16,6 @@ T = TypeVar('T')
 # region constant
 class PropNameConstant:
     # 启动时
-    # use_dep属性名
-    USE_DEP: Literal['fastapi_boot__use_dep_prop_name'] = 'fastapi_boot__use_dep_prop_name'
     # use_middleware属性名
     USE_MIDDLEWARE: Literal['fastapi_boot__use_middleware_prop_name'] = 'fastapi_boot__use_middleware_prop_name'
     # controller中route record属性名
@@ -28,7 +26,7 @@ class PropNameConstant:
     USE_DEP_PARAM_PREFIX_IN_ENDPOINT: Literal['fastapi_boot__use_dep_param_prefix_in_endpoint'] = 'fastapi_boot__use_dep_param_prefix_in_endpoint'
 
 
-class BlankPlaceholder:
+class UseMiddlewareReturnValuePlaceholder:
     ...
 
 # endregion
@@ -160,4 +158,21 @@ class TaskStore:
 
 task_store = TaskStore()
 
+# endregion
+
+
+# region Depends被dataclass frozen了，不能加prefix数据了
+@dataclass
+class UseDepRecordStore:
+    record: set[Any] = field(default_factory=set)
+
+    def add(self, tp: Any):
+        self.record.add(id(tp))
+
+    def has(self, tp: Any):
+        # 防止判断一些不可哈西的变量
+        return id(tp) in self.record
+
+
+use_dep_record_store = UseDepRecordStore()
 # endregion

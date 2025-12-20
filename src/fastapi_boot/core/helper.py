@@ -22,10 +22,11 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.responses import JSONResponse
 from .const import (
     PropNameConstant,
-    BlankPlaceholder,
+    UseMiddlewareReturnValuePlaceholder,
     app_store,
     task_store,
-    dep_store
+    dep_store,
+    use_dep_record_store
 )
 from .model import AppRecord, UseMiddlewareRecord
 from .utils import get_call_filename, match_path
@@ -53,18 +54,18 @@ def use_dep(dependency: Callable[..., T | Coroutine[Any, Any, T]] | None, use_ca
     ```
     """
     value: T = Depends(dependency=dependency, use_cache=use_cache)
-    setattr(value, PropNameConstant.USE_DEP, True)
+    use_dep_record_store.add(value)
     return value
 
 
 def _create_use_middleware_return_value(record: UseMiddlewareRecord):
-    bp = BlankPlaceholder()
+    bp = UseMiddlewareReturnValuePlaceholder()
     setattr(bp, PropNameConstant.USE_MIDDLEWARE, record)
     return bp
 
 
 def use_http_middleware(*dispatches: Callable[[Request, Callable[[Request], Coroutine[Any, Any, Response]]], Any]):
-    """add http middlewares for current Controller or Prefix with http endpoint, exclude inner Prefix
+    """给类中所有 **直接** http的endpoint添加http中间件
 
     ```python
 
@@ -108,9 +109,11 @@ def use_ws_middleware(
         *dispatches: Callable[[WebSocket, Callable[[WebSocket], Coroutine[Any, Any, None]]], Any],
         only_message: bool = False
 ):
-    """add websocket middlewares for current Controller or Prefix with websocket endpoint, exclude inner Prefix
-    - if `only_message` and message's type != 'websocket.senf': will ignore dispatches
+    """给类中所有 **直接** websocket的endpoint添加websocket中间件
+    >>> Params
+    only_message=False: 只有收到消息会触发，连接等事件不会触发
 
+    >>> Examples:
     ```python
 
     from collections.abc import Callable
@@ -226,10 +229,10 @@ def provide_app(
         exclude_scan_paths: Sequence[str | re.Pattern] = [],
         controllers: Sequence[Any] = [],
         beans: Sequence[Any] = []) -> FastAPI:
-    """_summary_
+    """启动入口
 
     Args:
-        pp (FastAPI, optional): FastAPi实例. Defaults to FastAPI().
+        app (FastAPI, optional): FastAPi实例. Defaults to FastAPI().
         scan_mode (ScanMode, optional): 扫描模式开关(默认开启，会扫描项目下的所有.py文件). Defaults to 'on'.
         max_workers (int, optional): 扫描最大线程数. Defaults to 20.
         inject_timeout (float, optional): 扫描注入超时时间. Defaults to 20.
@@ -254,14 +257,13 @@ def provide_app(
     # provide_app所在的文件
     app_root_dir = os.path.dirname(provide_filepath)
     app_record = AppRecord(app, inject_timeout, inject_retry_step, scan_mode)
-    app_store.add(os.path.dirname(provide_filepath), app_record)
+    app_store.add(app_root_dir, app_record)
     if not app_record.should_scan:
         task_store.emit(app_record=app_record)
         return app
     # app's prefix
-    proj_root_dir = os.getcwd()
     app_parts = Path(app_root_dir).parts
-    proj_parts = Path(proj_root_dir).parts
+    proj_parts = Path(os.getcwd()).parts
     prefix_parts = app_parts[len(proj_parts):]
     # 开始扫描
     dot_paths = []
@@ -326,7 +328,7 @@ WsHandler = Callable[[WebSocket, E], Any]
 
 
 def ExceptionHandler(exp: int | type[E]):
-    """The return value can be BaseModel instance、dataclass、dict or JSONResponse.
+    """声明式全局异常处理，用法同`@app.exception_handler`, 被装饰的函数可以返回`BaseModel instance`、`dataclass`、`dict` or `JSONResponse`.
     ```python
     @ExceptionHandler(MyException)
     async def _(req: Request, exp: AException):
@@ -372,8 +374,7 @@ def ExceptionHandler(exp: int | type[E]):
 
 
 def Lazy(func: Callable[[], T]) -> T:
-    """Combination of property and lru_cache decorator.
-    Lazy inject some dependency which will be provided after scanning.
+    """依赖懒注入，首次用到才会注入并缓存
 
     >>> Example
 
