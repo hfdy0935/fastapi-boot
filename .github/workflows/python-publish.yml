@@ -12,12 +12,12 @@ name: Upload FastAPIBoot Package to PyPI
 
 on:
   push:
-    branches: [main]
-  release:
-    types: [published]
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 
-permissions:
-  contents: read
 
 jobs:
   release-build:
