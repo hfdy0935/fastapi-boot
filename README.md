@@ -1,4 +1,18 @@
-<div align='center' style="font-weight:bolder;font-size:100px;color:green">FastAPIBoot</div>
+<h1 align="center">FastAPIBoot</h1>
+
+
+<div style="display:flex;gap:12px">
+
+[![test](https://github.com/hfdy0935/fastapi-boot/actions/workflows/test.yml/badge.svg)](https://github.com/hfdy0935/fastapi-boot/actions/workflows/test.yml)
+
+[![build&publish](https://github.com/hfdy0935/fastapi-boot/actions/workflows/build_publish.yml/badge.svg)](https://github.com/hfdy0935/fastapi-boot/actions/workflows/build_publish.yml)
+
+[![pypi](https://img.shields.io/badge/pypi-v0.0.37-blue)](https://pypi.org/project/fastapi-boot/)
+
+[![support-version](https://img.shields.io/badge/python-3.12%203.13-orange)]()
+
+</div>
+
 
 
 &emsp;&emsp;简单易用、功能强大的FastAPI工具库，支持CBV、依赖注入、声明式公共路由依赖和生命周期等写法，为**提高效率**而生。
@@ -6,10 +20,10 @@
 
 **特点**
 - 📦**无缝集成FastAPI，开箱即用**，继承FastAPI的优点，支持通过`CLI`初始化。
-- :racehorse:**支持`CBV`、`FBV`**，想套多少层就套多少层，路由层级关系更清晰。
-- :white_check_mark: **践行`IOC`、`DI`、`AOP`**，开发更高效。
-- :rainbow:**公共依赖提取**，结合多层`CBV`，避免`endpoint`中大量的`Depends`。
-- :hammer:**丰富的工具**，生命周期、异常处理、中间件、`tortoise`工具。
+- 🐎**支持`CBV`、`FBV`**，想套多少层就套多少层，路由层级关系更清晰。
+- ✅ **践行`IOC`、`DI`、`AOP`**，开发更高效。
+- 🌈**公共依赖提取**，结合多层`CBV`，避免`endpoint`中大量的`Depends`。
+- 🔨**丰富的工具**，生命周期、异常处理、中间件、`tortoise`工具。
 
 
 ## 1. 快速开始
@@ -23,7 +37,7 @@ uv add fastapi-boot
 
 ### 1.2 和FastAPI比较
 :pushpin:要实现这些接口
-![alt text](assets/image.png)
+<img src="https://raw.githubusercontent.com/hfdy0935/fastapi-boot/refs/heads/main/assets/image.png"/>
 
 1. 用fastapi_boot
 ```py
@@ -114,19 +128,18 @@ if __name__ == '__main__':
 ```bash
 fastapi-boot --host=localhost --port=8000 --reload --name=Demo --scan_mode=on
 ```
-![alt text](assets/image-1.png)
+<img src="https://raw.githubusercontent.com/hfdy0935/fastapi-boot/refs/heads/main/assets/image-1.png"/>
 
 
 ## 2. 两种启动方式
 ### 2.1 扫描（默认）
 > **自动扫描项目下所有以`.py`结尾的文件，可通过`exclude_scan_paths`排除指定目录/文件**
 
-![alt text](assets/image-3.png)
+<img src="https://raw.githubusercontent.com/hfdy0935/fastapi-boot/refs/heads/main/assets/image-3.png"/>
 
 ### 3.3 手动导入
-> **需要手动导入**
 
-![alt text](assets/image-2.png)
+<img src="https://raw.githubusercontent.com/hfdy0935/fastapi-boot/refs/heads/main/assets/image-2.png"/>
 
 
 ## 3. 所有API
