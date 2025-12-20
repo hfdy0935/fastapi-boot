@@ -213,13 +213,12 @@ class UseMiddlewareRecord:
         Request], Coroutine[Any, Any, Response]]], Any]] = field(default_factory=list)
     ws_dispatches: list[Callable[[WebSocket, Callable[[
         WebSocket], Coroutine[Any, Any, None]]], None]] = field(default_factory=list)
-    # ws_dispatches only be called if ws_only_message and message's type == 'websocket.send'
     ws_only_message: bool = False
 
     def add_http_middleware(self, app: FastAPI):
         """add midleware to app"""
-        # if not self.http_dispatches:
-        #     return
+        if not self.http_dispatches:
+            return
 
         async def wrapper(request: Request, call_next: Callable[[Request], Coroutine[Any, Any, Any]]):
             if (request.url.path, request.method) in self.http_urls_methods:

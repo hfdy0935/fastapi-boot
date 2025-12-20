@@ -1,4 +1,4 @@
-from fastapi_boot.tortoise_util.decorator import (
+from fastapi_boot.tortoise_utils.decorator import (
     Select as Select,
     Update as Update,
     Insert as Insert,
