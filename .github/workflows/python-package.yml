@@ -30,9 +30,13 @@ jobs:
       run: |
         uv sync
         uv add pytest pytest-asyncio
+        cd tests/test_project
+        uv sync
     - name: Run pytest
       # uses: dariocurr/pytest-summary@v2.4
-      run: pytest --junit-xml=.test_report.xml tests
+      run: |
+        cd tests
+        pytest --junit-xml=.test_report.xml tests
       # with:
         # the pytest extensions to install along pytest
         # extensions: # optional
