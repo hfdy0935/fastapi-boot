@@ -34,7 +34,7 @@ uv add fastapi-boot
 ```
 
 ### 1.2 和FastAPI比较
-:pushpin:要实现这些接口
+📌要实现这些接口
 <img src="https://raw.githubusercontent.com/hfdy0935/fastapi-boot/refs/heads/main/assets/image.png"/>
 
 1. 用fastapi_boot
@@ -122,7 +122,7 @@ if __name__ == '__main__':
 ```
 
 
-### 1.3 :bulb:通过CLI生成：
+### 1.3  💡通过CLI生成：
 ```bash
 fastapi-boot --host=localhost --port=8000 --reload --name=Demo --scan_mode=on
 ```
