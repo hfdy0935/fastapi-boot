@@ -11,14 +11,26 @@ class EndpointController:
             'msg': 'cbv_get'
         }
 
-    @Prefix('/prefix')
+    @Prefix('/prefix1')
     class _:
-        @Post()
-        async def func2(self):
-            return {
-                'code': 0,
-                'msg': 'cbv_prefix_post'
-            }
+        @Prefix('/prefix2')
+        class _:
+            @Prefix('/prefix3')
+            class _:
+                @Prefix('/prefix4')
+                class _:
+                    @Prefix('/prefix5')
+                    class _:
+                        @Prefix('/prefix6')
+                        class _:
+                            @Prefix('/prefix7')
+                            class _:
+                                @Post()
+                                async def func2(self):
+                                    return {
+                                        'code': 0,
+                                        'msg': 'cbv_prefix_post'
+                                    }
 
 
 @Controller('/fbv').put('')

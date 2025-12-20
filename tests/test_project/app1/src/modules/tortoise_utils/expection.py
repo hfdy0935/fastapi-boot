@@ -2,7 +2,7 @@ from typing import Any, Dict
 from fastapi import HTTPException, Request
 from fastapi_boot.core import ExceptionHandler
 
-from test_project.src.modules.tortoise_utils.model import BaseResp
+from test_project.app1.src.modules.tortoise_utils.model import BaseResp
 
 
 class CreateUserFailException(HTTPException):

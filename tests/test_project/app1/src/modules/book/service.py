@@ -1,6 +1,6 @@
 from typing import Annotated
 from fastapi_boot.core import Service, Inject, Autowired
-from test_project.src.modules.book.models import Book, BookDTO
+from test_project.app1.src.modules.book.models import Book, BookDTO
 
 
 @Service

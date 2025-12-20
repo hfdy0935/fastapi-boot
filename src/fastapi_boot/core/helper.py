@@ -221,7 +221,7 @@ def HTTPMiddleware(dispatch: DispatchFunc | type[DispatchCls]):
 
 
 def provide_app(
-        app: FastAPI = FastAPI(),
+        app: FastAPI | None = None,
         scan_mode: ScanMode = 'on',
         max_workers: int = 20,
         inject_timeout: float = 20,
@@ -232,7 +232,7 @@ def provide_app(
     """启动入口
 
     Args:
-        app (FastAPI, optional): FastAPi实例. Defaults to FastAPI().
+        app (FastAPI, optional): FastAPi实例. Defaults to None.
         scan_mode (ScanMode, optional): 扫描模式开关(默认开启，会扫描项目下的所有.py文件). Defaults to 'on'.
         max_workers (int, optional): 扫描最大线程数. Defaults to 20.
         inject_timeout (float, optional): 扫描注入超时时间. Defaults to 20.
@@ -247,6 +247,7 @@ def provide_app(
     Returns:
         FastAPI: _description_
     """
+    app = app or FastAPI()
     provide_filepath = get_call_filename()
     # 缓存
     if app_record := app_store.get_or_none(provide_filepath):

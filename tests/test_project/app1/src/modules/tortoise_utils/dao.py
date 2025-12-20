@@ -1,7 +1,7 @@
 from fastapi_boot.core import Repository
 from fastapi_boot.tortoise_utils import Select, Insert, Delete
 
-from test_project.src.modules.tortoise_utils.model import User, UserDTO, UserVO
+from test_project.app1.src.modules.tortoise_utils.model import User, UserDTO, UserVO
 
 
 # 函数装饰器

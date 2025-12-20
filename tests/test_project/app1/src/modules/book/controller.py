@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from fastapi_boot.core import Controller, Get, Prefix, Post, Delete, Put, use_dep
-from test_project.src.modules.book.service import BookService
-from test_project.src.modules.book.models import BookDTO
-from test_project.src.modules.book.hooks import use_path_book_name
+from test_project.app1.src.modules.book.service import BookService
+from test_project.app1.src.modules.book.models import BookDTO
+from test_project.app1.src.modules.book.hooks import use_path_book_name
 
 
 @Controller('/book')

@@ -19,7 +19,11 @@ requires = ["uv_build>=0.9.18,<0.10.0"]
 build-backend = "uv_build"
 
 [tool.uv.workspace]
-members = ["tests/test_project"]
+members = [
+    "tests/test_project",
+    "tests/test_project/app1",
+    "tests/test_project/app2",
+]
 
 [project.scripts]
 fastapi-boot = "fastapi_boot.cli.cli:main"

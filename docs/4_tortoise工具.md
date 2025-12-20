@@ -15,13 +15,15 @@
 :bulb: `Sql`**是其他装饰器的基础装饰器**，其他装饰器是`Sql`装饰器的**语义化表达**，同时**返回值也做了处理**，和tortoise保持一致
 :bulb: 支持**函数装饰器**、**方法装饰器**、**普通调用**三种方式
 
-|  装饰器  |  返回值类型注解 / `execute`的参数  |                返回值                |
-| :------: | :--------------------------------: | :----------------------------------: |
-|  `Sql`   |        `None` `list[dict]`         |       `tuple[int, list[dict]]`       |
-| `Select` | `M` `list[M]` `None or list[dict]` | `M or None`  `list[M]`  `list[dict]` |
-| `Update` |          `None`     `int`          |                `int`                 |
-| `Insert` |          `None`     `int`          |                `int`                 |
-| `Delete` |          `None`     `int`          |                `int`                 |
+> `M`是`BaseModel`或`Model`
+
+|  装饰器  |      返回值类型注解 / `execute`的参数      |                返回值                |
+| :------: | :----------------------------------------: | :----------------------------------: |
+|  `Sql`   |      `None` `tuple[int, list[dict]]`       |       `tuple[int, list[dict]]`       |
+| `Select` | `M` `list[M]` `None or list or list[dict]` | `M or None`  `list[M]`  `list[dict]` |
+| `Update` |              `None`     `int`              |                `int`                 |
+| `Insert` |              `None`     `int`              |                `int`                 |
+| `Delete` |              `None`     `int`              |                `int`                 |
 
 
 :pushpin:关于返回值类型注解和`execute`的参数
@@ -31,8 +33,9 @@
 async def get_all_user() -> list[UserVO]: ... # list[UserVO]
 
 # 函数调用
+# !r用于repr(var_name)，字符串可保留引号
 async def get_user_by_name(name: str):
-    return await Select('select * from {user} where name={name}')\
+    return await Select('select * from {user} where name={name!r}')\
         .fill(user=User.Meta.table, name=name)\
             .execute(list[UserVO]) # list[UserVO]
 
@@ -70,15 +73,10 @@ async def get_user_by_name(name: str):
 
 :one: `main.py`
 ```py
-from fastapi import FastAPI
 import uvicorn
-
 from fastapi_boot.core import provide_app
-from src.user.event import lifespan
 
-from src.user.controller import UserController
-
-app = provide_app(FastAPI(lifespan=lifespan), controllers=[UserController])
+app = provide_app()
 
 if __name__ == '__main__':
     uvicorn.run('main:app', reload=True)
@@ -92,12 +90,12 @@ from fastapi_boot.core import Controller, Get, Post, Delete
 from src.user.service import UserService
 from src.user.model import BaseResp, UserDTO, UserVO
 from src.user.expection import CreateUserFailException
-
+from dataclasses import dataclass
 
 @Controller('/user')
+@dataclass
 class UserController:
-    def __init__(self, user_service: UserService) -> None:
-        self.user_service = user_service
+    user_service: UserService
 
     @Get('/all', response_model=BaseResp[list[UserVO]])
     async def get_all_user(self):
@@ -135,9 +133,9 @@ from src.user.model import UserDTO
 
 
 @Service
+@dataclass
 class UserService:
-    def __init__(self, user_dao: UserDao) -> None:
-        self.user_dao = user_dao
+    user_dao: UserDao
 
     async def get_all(self):
         return await get_all_user()
@@ -190,13 +188,13 @@ class UserDao:
 
 :five: `event.py`
 ```py
-from contextlib import asynccontextmanager
+from fastapi_boot.core import Lifespan
 from tortoise import Tortoise
 
 from src.user.bean import TortoiseConfig
 
 
-@asynccontextmanager
+@Lifespan
 async def lifespan(_):
     await Tortoise.init(db_url=TortoiseConfig.db_url, modules=dict(models=TortoiseConfig.modules))
     await Tortoise.generate_schemas()

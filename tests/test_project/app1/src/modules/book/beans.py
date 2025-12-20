@@ -1,6 +1,6 @@
 from typing import Annotated
 from fastapi_boot.core import Bean, Inject
-from test_project.src.modules.book.models import Book
+from test_project.app1.src.modules.book.models import Book
 
 
 @Bean('三国演义')

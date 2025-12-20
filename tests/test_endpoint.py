@@ -4,15 +4,16 @@ from httpx import Response, AsyncClient
 import pytest
 
 
-def test_cbv(test_client: TestClient):
-    resp: Response = test_client.get('/cbv')
+def test_cbv(test_app1_client: TestClient):
+    resp: Response = test_app1_client.get('/cbv')
     assert resp.status_code == 200
     assert resp.json() == {
         'code': 0,
         'msg': 'cbv_get'
     }
 
-    resp: Response = test_client.post('/cbv/prefix')
+    resp: Response = test_app1_client.post(
+        '/cbv/prefix1/prefix2/prefix3/prefix4/prefix5/prefix6/prefix7')
     assert resp.status_code == 200
     assert resp.json() == {
         'code': 0,
@@ -21,15 +22,15 @@ def test_cbv(test_client: TestClient):
 
 
 @pytest.mark.anyio
-async def test_fbv(test_async_client: AsyncClient):
-    resp: Response = await test_async_client.put('/fbv')
+async def test_fbv(test_app1_async_client: AsyncClient):
+    resp: Response = await test_app1_async_client.put('/fbv')
     assert resp.status_code == 200
     assert resp.json() == {
         'code': 0,
         'msg': 'fbv_put'
     }
 
-    resp: Response = await test_async_client.delete('/fbv')
+    resp: Response = await test_app1_async_client.delete('/fbv')
     assert resp.status_code == 200
     assert resp.json() == {
         'code': 0,
@@ -39,6 +40,6 @@ async def test_fbv(test_async_client: AsyncClient):
 
 def test_websocket(app_instance: FastAPI):
     client = TestClient(app_instance)
-    with client.websocket_connect('/websocket') as websocket:
+    with client.websocket_connect('/app1/websocket') as websocket:
         data = websocket.receive_json()
         assert data == {"msg": "Hello WebSocket"}

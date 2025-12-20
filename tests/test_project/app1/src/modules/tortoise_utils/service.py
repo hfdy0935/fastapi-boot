@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from fastapi_boot.core import Service
-from test_project.src.modules.tortoise_utils.dao import UserDao, get_all_user, get_user_by_name
-from test_project.src.modules.tortoise_utils.model import UserDTO
+from test_project.app1.src.modules.tortoise_utils.dao import UserDao, get_all_user, get_user_by_name
+from test_project.app1.src.modules.tortoise_utils.model import UserDTO
 
 
 @Service

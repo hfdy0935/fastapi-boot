@@ -1,7 +1,7 @@
 from typing import Annotated
 from fastapi import HTTPException, Path
 from fastapi_boot.core import Inject
-from test_project.src.modules.book.service import BookService
+from test_project.app1.src.modules.book.service import BookService
 
 
 book_service = Inject(BookService)

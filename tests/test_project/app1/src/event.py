@@ -1,6 +1,6 @@
 from tortoise import Tortoise
 
-from test_project.src.config import TortoiseConfig
+from test_project.app1.src.config import TortoiseConfig
 from fastapi_boot.core import Lifespan
 
 

@@ -1,6 +1,6 @@
 from fastapi import WebSocket
 from fastapi_boot.core import Controller, Get, Prefix, WS, use_http_middleware, use_ws_middleware
-from test_project.src.modules.middleware.middleware import counter_plus_one_http_middleware, counter_minus_one_websocket_middleware
+from test_project.app1.src.modules.middleware.middleware import counter_plus_one_http_middleware1, counter_plus_one_http_middleware2, counter_minus_one_websocket_middleware
 
 
 @Controller('/middleware')
@@ -12,7 +12,7 @@ class MiddlewareController:
     @Prefix()
     class _:
         _ = use_http_middleware(
-            counter_plus_one_http_middleware, counter_plus_one_http_middleware)
+            counter_plus_one_http_middleware1, counter_plus_one_http_middleware2)
         __ = use_ws_middleware(
             counter_minus_one_websocket_middleware, only_message=True)
 

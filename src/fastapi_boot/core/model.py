@@ -221,7 +221,10 @@ class UseMiddlewareRecord:
             return
 
         async def wrapper(request: Request, call_next: Callable[[Request], Coroutine[Any, Any, Any]]):
-            if (request.url.path, request.method) in self.http_urls_methods:
+            # exclude root_path
+            scope_path = request.scope.get('path', '').replace(
+                request.scope.get('root_path', ''), '')
+            if (scope_path, request.method) in self.http_urls_methods:
                 for func in self.http_dispatches:
                     # "call_next" default param ==> save call_next of each loop to avoid "maximum recursion depth exceeded".
                     # "func" default params ==> save "func" of each loop to avoid repeatation of last func.

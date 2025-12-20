@@ -2,9 +2,9 @@ from dataclasses import dataclass
 from typing import Annotated
 from fastapi import Query
 from fastapi_boot.core import Controller, Get, Post, Delete
-from test_project.src.modules.tortoise_utils.service import UserService
-from test_project.src.modules.tortoise_utils.model import BaseResp, UserDTO, UserVO
-from test_project.src.modules.tortoise_utils.expection import CreateUserFailException
+from test_project.app1.src.modules.tortoise_utils.service import UserService
+from test_project.app1.src.modules.tortoise_utils.model import BaseResp, UserDTO, UserVO
+from test_project.app1.src.modules.tortoise_utils.expection import CreateUserFailException
 
 
 @Controller('/user')
