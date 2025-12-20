@@ -1,7 +1,7 @@
 <h1 align="center">FastAPIBoot</h1>
 
 
-<div style="display:flex;gap:12px">
+<div style="display:flex;gap:6px">
 
 [![test](https://github.com/hfdy0935/fastapi-boot/actions/workflows/test.yml/badge.svg)](https://github.com/hfdy0935/fastapi-boot/actions/workflows/test.yml)
 
