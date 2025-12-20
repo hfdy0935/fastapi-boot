@@ -1,4 +1,4 @@
-name: Upload FastAPIBoot Package to PyPI
+name: build&publish
 
 on:
   push:
