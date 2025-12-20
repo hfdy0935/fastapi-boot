@@ -10,13 +10,13 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
-
-    runs-on: ubuntu-latest
+  build_test:
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest, macos-14]
         python-version: ["3.10", "3.11", "3.12"]
+    runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v4
@@ -25,7 +25,7 @@ jobs:
     - name: insatll python
       uses: actions/setup-python@v5
       with:
-          python-version-file: ".python-version"
+          python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: uv sync
     - name: Run pytest
