@@ -1,6 +1,6 @@
 [project]
 name = "fastapi-boot"
-version = "0.0.37"
+version = "0.0.38"
 description = "FastAPI tools"
 readme = "README.md"
 authors = [{ name = "hfdy", email = "hfdy09354121794@gmail.com" }]
@@ -31,3 +31,7 @@ fastapi-boot = "fastapi_boot.cli.cli:main"
 
 [project.optional-dependencies]
 db = ["tortoise-orm>=0.24.1"]
+
+[project.urls]
+Homepage = "https://github.com/hfdy0935/fastapi-boot"
+Repository = "https://github.com/hfdy0935/fastapi-boot"
