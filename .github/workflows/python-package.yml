@@ -5,9 +5,9 @@ name: Python package
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   build_test:
@@ -19,26 +19,25 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v4
-    - name: install uv
-      uses: astral-sh/setup-uv@v5
-    - name: insatll python
-      uses: actions/setup-python@v5
-      with:
+      - uses: actions/checkout@v4
+      - name: install uv
+        uses: astral-sh/setup-uv@v5
+      - name: insatll python
+        uses: actions/setup-python@v5
+        with:
           python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        uv sync
-        uv add pytest pytest-asyncio
-        cd tests/test_project
-        uv sync
-    - name: Run pytest
-      # uses: dariocurr/pytest-summary@v2.4
-      run: |
-        # 和本地测试时保持一致，需在tests目录下执行pytest
-        cd tests
-        uv run pytest --junit-xml=../.test_report.xml
-      # with:
+      - name: Install dependencies
+        run: |
+          uv sync
+          cd tests/test_project
+          uv sync
+      - name: Run pytest
+        # uses: dariocurr/pytest-summary@v2.4
+        run: |
+          # 和本地测试时保持一致，需在tests目录下执行pytest
+          cd tests
+          uv run pytest --junit-xml=../.test_report.xml
+        # with:
         # the pytest extensions to install along pytest
         # extensions: # optional
         # the pytest options
