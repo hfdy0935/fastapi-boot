@@ -9,7 +9,7 @@
 
 [![pypi](https://img.shields.io/badge/pypi-v0.0.37-blue)](https://pypi.org/project/fastapi-boot/)
 
-[![support-version](https://img.shields.io/badge/python-3.12%203.13-orange)]()
+[![support-version](https://img.shields.io/badge/python-3.10%2B-orange)]()
 
 </div>
 
