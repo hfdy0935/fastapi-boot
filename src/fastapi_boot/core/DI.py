@@ -35,9 +35,7 @@ def _inject(app_record: AppRecord, tp: type[T], name: str | None) -> T:
             raise_func()
         time.sleep(app_record.inject_retry_step)
         if time.time() - start > app_record.inject_timeout:
-            name_info = f"名为 '{name}' " if name is not None else ''
-            raise DependencyNotFoundException(
-                f"类型为 '{tp}' {name_info}的依赖未找到")
+            raise_func()
 
 
 def inject_params_deps(app_record: AppRecord, params: list[Parameter]):
@@ -111,7 +109,7 @@ def Bean(func_or_name: Callable[..., T]): ...
 
 
 def Bean(func_or_name: str | Callable[..., T]):
-    """用于装饰函数，讲返回值收集为依赖；最好显式写出函数返回类型
+    """用于装饰函数，将返回值收集为依赖；最好显式写出函数返回类型
     # Example
     1. collect by `type`
     ```python

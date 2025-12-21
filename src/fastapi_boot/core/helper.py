@@ -238,8 +238,8 @@ def provide_app(
         inject_timeout (float, optional): 扫描注入超时时间. Defaults to 20.
         inject_retry_step (float, optional): 注入依赖重试间隔，单位s. Defaults to 0.05.
         exclude_scan_paths (Iterable[str | re.Pattern], optional): 排除扫描的目录/文件列表. Defaults to [].
-        controllers (Sequence[Any], optional): scan_mode关闭时需手动导入Controller，可以传到这里，防止未使用被工具移除. Defaults to [].
-        beans (Sequence[Any], optional): scan_mode关闭时需手动导入bean，可以传到这里，防止未使用被工具移除. Defaults to [].
+        controllers (Sequence[Any], optional): scan_mode关闭时需手动导入Controller，可以传到这里，防止未使用被代码格式化工具移除. Defaults to [].
+        beans (Sequence[Any], optional): scan_mode关闭时需手动导入bean，可以传到这里，防止未使用被代码格式化工具移除. Defaults to [].
 
     Raises:
         e: _description_
