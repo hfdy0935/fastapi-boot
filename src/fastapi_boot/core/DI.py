@@ -103,12 +103,12 @@ def collect_bean(app_record: AppRecord, func: Callable, name: str | None = None)
 
 
 @overload
-def Bean(func_or_name: str): ...
+def Bean(func_or_name: str, /): ...
 @overload
-def Bean(func_or_name: Callable[..., T]): ...
+def Bean(func_or_name: Callable[..., T], /): ...
 
 
-def Bean(func_or_name: str | Callable[..., T]):
+def Bean(func_or_name: str | Callable[..., T], /):
     """用于装饰函数，将返回值收集为依赖；最好显式写出函数返回类型
     # Example
     1. collect by `type`
@@ -176,14 +176,14 @@ def collect_dep(app_record: AppRecord, cls: type, name: str | None = None):
 
 
 @overload
-def Injectable(class_or_name: str) -> Callable[[type[T]], type[T]]: ...
+def Injectable(class_or_name: str, /) -> Callable[[type[T]], type[T]]: ...
 
 
 @overload
-def Injectable(class_or_name: type[T]) -> type[T]: ...
+def Injectable(class_or_name: type[T], /) -> type[T]: ...
 
 
-def Injectable(class_or_name: str | type[T]):
+def Injectable(class_or_name: str | type[T], /):
     """初始化并把实例收集为依赖
     # Example
     ```python

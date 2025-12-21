@@ -24,7 +24,7 @@ class BookController:
 
     @Prefix()
     @dataclass
-    class BookNamePathParam:
+    class NeedBookNamePathParamController:
         book_service: BookService
         book_name = use_dep(use_path_book_name)
 
