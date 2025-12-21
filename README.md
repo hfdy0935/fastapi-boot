@@ -132,7 +132,7 @@ fastapi-boot --host=localhost --port=8000 --reload --name=Demo --scan_mode=on
 
 ## 2. 两种启动方式
 ### 2.1 扫描（默认）
-> **自动扫描项目下所有以`.py`结尾的文件，可通过`exclude_scan_paths`排除指定目录/模块的路径**
+> **自动扫描项目下所有以`.py`结尾的文件，可通过`exclude_scan_paths`排除指定<span style="color:red">目录/模块的路径</span>**
 
 <img src="https://raw.githubusercontent.com/hfdy0935/fastapi-boot/refs/heads/main/assets/image-3.png"/>
 
