@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 import os
 import threading
 from threading import Lock
-from typing import Any, Generic, Literal, TypeVar, cast
+from typing import Any, Generic, Literal, TypeVar
 from warnings import warn
 
 
@@ -125,6 +125,7 @@ class Task:
 class TaskStore:
     record: defaultdict[str, list[Task]] = field(
         default_factory=lambda: defaultdict(list))
+    lock: Lock = field(default_factory=threading.Lock)
 
     def schedule(self, path: str, task: Callable[[AppRecord], Any]):
         """调用任务
@@ -137,23 +138,17 @@ class TaskStore:
         if app_record := app_store.get_or_none(path):
             task(app_record)
         else:
-            # 任务先添加，需要等app准备好
+            # 添加任务，至app准备好再调用
             self.record[path].append(Task(handler=task))
 
     def emit(self, app_record: AppRecord):
-        paths_need_remove = []
-        for path, tasks in self.record.items():
-            if app_record != app_store.get_or_none(path):
-                continue
-            for task in tasks:
-                task.invoke(app_record)
-            paths_need_remove.append(path)
-        for path in paths_need_remove:
-            self.record.pop(path)
-
-    def clear(self):
-        self.record = cast(defaultdict[str, list[Task]], {
-                           k: v for k, v in self.record.items() if len(v) > 0 and not v[0].invoked})
+        with self.lock:
+            for path, tasks in self.record.items():
+                if app_record != app_store.get_or_none(path):
+                    continue
+                for task in tasks:
+                    if not task.invoked:
+                        task.invoke(app_record)
 
 
 task_store = TaskStore()
@@ -161,7 +156,8 @@ task_store = TaskStore()
 # endregion
 
 
-# region Depends被dataclass frozen了，不能加prefix数据了
+# region use_dep_record_store
+# Depends被dataclass frozen了，不能加prefix数据了
 @dataclass
 class UseDepRecordStore:
     record: set[Any] = field(default_factory=set)
@@ -170,7 +166,7 @@ class UseDepRecordStore:
         self.record.add(id(tp))
 
     def has(self, tp: Any):
-        # 防止判断一些不可哈西的变量
+        # 防止判断一些不可hash的变量
         return id(tp) in self.record
 
 

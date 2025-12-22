@@ -10,9 +10,10 @@ from collections.abc import Callable, Coroutine
 from pathlib import Path
 import re
 from types import NoneType
-from typing import Any, Protocol, TypeVar, cast, ParamSpec
+from typing import Any, Final, Protocol, TypeVar, cast, ParamSpec
 from inspect import isclass, iscoroutinefunction
 import concurrent
+import warnings
 from pydantic import BaseModel
 
 from fastapi import Depends, FastAPI, Request, Response, WebSocket
@@ -220,6 +221,9 @@ def HTTPMiddleware(dispatch: DispatchFunc | type[DispatchCls]):
     return dispatch
 
 
+DEFAULT_SCAN_PRIORITY: Final[int] = 1000
+
+
 def provide_app(
         app: FastAPI | None = None,
         scan_mode: ScanMode = 'on',
@@ -227,6 +231,7 @@ def provide_app(
         inject_timeout: float = 20,
         inject_retry_step: float = 0.05,
         exclude_scan_paths: Sequence[str | re.Pattern] = [],
+        scan_priority: dict[str, int] = {},
         controllers: Sequence[Any] = [],
         beans: Sequence[Any] = []) -> FastAPI:
     """启动入口
@@ -238,6 +243,7 @@ def provide_app(
         inject_timeout (float, optional): 扫描注入超时时间. Defaults to 20.
         inject_retry_step (float, optional): 注入依赖重试间隔，单位s. Defaults to 0.05.
         exclude_scan_paths (Iterable[str | re.Pattern], optional): 排除扫描的目录/模块路径列表. Defaults to [].
+        scan_priority (dict[str, int], optional): 扫描优先级，`{模块路径: 优先级}`，数字越小优先级越高，避免出现前面执行注入的模块数量超过max_workers，一直卡住导致后面无法收集. Defaults to {}.
         controllers (Sequence[Any], optional): scan_mode关闭时需手动导入Controller，可以传到这里，防止未使用被代码格式化工具移除. Defaults to [].
         beans (Sequence[Any], optional): scan_mode关闭时需手动导入bean，可以传到这里，防止未使用被代码格式化工具移除. Defaults to [].
 
@@ -266,8 +272,8 @@ def provide_app(
     app_parts = Path(app_root_dir).parts
     proj_parts = Path(os.getcwd()).parts
     prefix_parts = app_parts[len(proj_parts):]
-    # 开始扫描
-    dot_paths = []
+    # 收集扫描路径
+    dot_paths = set()
     for root, _, files in os.walk(app_root_dir):
         for file in files:
             fullpath = os.path.join(root, file)
@@ -280,14 +286,24 @@ def provide_app(
             )
             if any(match_path(p, dot_path) for p in exclude_scan_paths):
                 continue
-            dot_paths.append(dot_path)
+            dot_paths.add(dot_path)
+    # 优先级排序
+    for p in scan_priority:
+        if p not in dot_paths:
+            warnings.warn(f'模块{p}未被扫描，优先级配置无效')
+    scan_priority = {pa: pr for pa,
+                     pr in scan_priority.items() if pa in dot_paths}
+    for p in dot_paths:
+        scan_priority[p] = scan_priority.get(p, DEFAULT_SCAN_PRIORITY)
+    dot_paths = sorted(
+        scan_priority, key=lambda x: scan_priority[x])
+    # 扫描
     futures: list[Future] = []
     with ThreadPoolExecutor(max_workers) as executor:
         for dot_path in dot_paths:
             future = executor.submit(__import__, dot_path)
             futures.append(future)
         concurrent.futures.wait(futures)
-        # wait all future finished
         for future in futures:
             try:
                 future.result()

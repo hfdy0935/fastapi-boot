@@ -30,9 +30,12 @@ def _inject(app_record: AppRecord, tp: type[T], name: str | None) -> T:
     while True:
         if res := dep_store.inject_dep(tp, name):
             return res
-        # 没找到，不扫描
+        # 没找到，不扫描，直接报错
         if not app_record.should_scan:
             raise_func()
+        # 等待
+        # TODO 是否需要尝试运行一次任务
+        # task_store.emit(app_record)
         time.sleep(app_record.inject_retry_step)
         if time.time() - start > app_record.inject_timeout:
             raise_func()
@@ -201,7 +204,6 @@ def Injectable(class_or_name: str | type[T], /):
             app_record, class_or_name))
         return class_or_name
     else:
-
         def wrapper(cls: type[T]):
             task_store.schedule(filename, lambda app_record: collect_dep(
                 app_record, cls, class_or_name))

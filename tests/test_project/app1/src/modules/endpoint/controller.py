@@ -41,6 +41,7 @@ async def func3():
     }
 
 
+@on_app_ready
 def app_ready_callback(app: FastAPI):
     @app.delete('/fbv')
     def _():
@@ -48,9 +49,6 @@ def app_ready_callback(app: FastAPI):
             'code': 0,
             'msg': 'fbv_delete'
         }
-
-
-on_app_ready(app_ready_callback)
 
 
 @Controller('/websocket')
