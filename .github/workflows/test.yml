@@ -30,10 +30,10 @@ jobs:
         run: |
           cd fastapi_boot
           uv sync
-          cd tests
+          cd ../tests
           uv sync
       - name: Run pytest
         # uses: dariocurr/pytest-summary@v2.4
         run: |
-          # 和本地测试时保持一致，需在tests目录下执行pytest
+          cd tests
           uv run pytest
