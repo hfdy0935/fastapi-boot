@@ -1,18 +1,8 @@
 name: build&publish
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "src/**"
-      - "pyproject.toml"
-  pull_request:
-    branches:
-      - main
-    paths:
-      - "src/**"
-      - "pyproject.toml"
+  release:
+    types: [created]
 
 jobs:
   release-build:
@@ -34,7 +24,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-dists
-          path: ../dist/
+          path: dist/
 
   pypi-publish:
     runs-on: ubuntu-latest
