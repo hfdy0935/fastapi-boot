@@ -19,7 +19,7 @@ jobs:
         run: |
           cd fastapi_boot
           uv sync
-          uv build --outdir ../dist/
+          uv build --out-dir ../dist/
       - name: Upload distributions
         uses: actions/upload-artifact@v4
         with:
