@@ -6,7 +6,7 @@
 [![test](https://github.com/hfdy0935/fastapi-boot/actions/workflows/test.yml/badge.svg)](https://github.com/hfdy0935/fastapi-boot/actions/workflows/test.yml)
 [![build&publish](https://github.com/hfdy0935/fastapi-boot/actions/workflows/build_publish.yml/badge.svg)](https://github.com/hfdy0935/fastapi-boot/actions/workflows/build_publish.yml)
 [![coverage](https://img.shields.io/codecov/c/github/hfdy0935/fastapi-boot)](https://codecov.io/gh/hfdy0935/fastapi-boot)
-[![pypi](https://img.shields.io/badge/pypi-v0.0.47-blue
+[![pypi](https://img.shields.io/badge/pypi-v0.0.48-blue
 )](https://pypi.org/project/fastapi-boot/)
 [![support-version](https://img.shields.io/badge/python-3.10%2B-orange)]()
 
