@@ -2,7 +2,7 @@
 name = "fastapi-boot"
 version = "0.0.47"
 description = "FastAPI tools"
-readme = "../README.md"
+readme = "README.md"
 authors = [{ name = "hfdy", email = "hfdy09354121794@gmail.com" }]
 requires-python = ">=3.13"
 dependencies = ["fastapi>=0.125.0", "pydantic>=2.12.5", "uvicorn>=0.38.0"]

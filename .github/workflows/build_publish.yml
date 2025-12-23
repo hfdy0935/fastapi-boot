@@ -18,6 +18,7 @@ jobs:
       - name: Build release distributions
         run: |
           cd fastapi_boot
+          cp ../README.md ./
           uv sync
           uv build --out-dir ../dist/
       - name: Upload distributions
