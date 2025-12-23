@@ -30,7 +30,7 @@ jobs:
         run: |
           cd fastapi_boot
           uv sync
-          cd tests
+          cd ../tests
           uv sync
       - name: Run pytest
         # uses: dariocurr/pytest-summary@v2.4
