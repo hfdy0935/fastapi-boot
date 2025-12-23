@@ -1,0 +1,20 @@
+[project]
+name = "tests"
+version = "0.1.0"
+description = "fastapi-boot test project"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "aiomysql>=0.3.2",
+    "asyncpg>=0.31.0",
+    "fastapi>=0.127.0",
+    "fastapi-boot",
+    "httpx>=0.28.1",
+    "pytest>=9.0.2",
+    "pytest-asyncio>=1.3.0",
+    "tortoise-orm==0.24.1",
+    "uvicorn>=0.40.0",
+]
+
+[tool.uv.sources]
+fastapi-boot = { workspace = true }

@@ -1,9 +1,9 @@
+from httpx import ASGITransport, AsyncClient
+from fastapi.testclient import TestClient
+import pytest
 import pytest_asyncio
 from tortoise import Tortoise
-from test_project.main import app
-import pytest
-from fastapi.testclient import TestClient
-from httpx import ASGITransport, AsyncClient
+from src.test_project.app import app
 
 
 @pytest.fixture(scope='module')
@@ -42,7 +42,7 @@ async def init_db():
     await Tortoise.init(
         db_url='sqlite://:memory:',
         modules={'models': [
-            'test_project.app1.src.modules.tortoise_utils.model']}
+            'src.test_project.app1.modules.tortoise_utils.model']}
     )
     await Tortoise.generate_schemas()
     yield
