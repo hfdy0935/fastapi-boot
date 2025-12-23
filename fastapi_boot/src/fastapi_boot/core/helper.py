@@ -287,7 +287,6 @@ def provide_app(
             if any(match_path(p, dot_path) for p in exclude_scan_paths):
                 continue
             dot_paths.add(dot_path)
-
     # 优先级排序
     for p in scan_priority:
         if p not in dot_paths:
