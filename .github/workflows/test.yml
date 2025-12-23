@@ -28,23 +28,13 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
+          cd fastapi_boot
           uv sync
-          cd tests/test_project
+          cd tests
           uv sync
       - name: Run pytest
         # uses: dariocurr/pytest-summary@v2.4
         run: |
           # 和本地测试时保持一致，需在tests目录下执行pytest
           cd tests
-          uv run pytest --junit-xml=../.test_report.xml
-        # with:
-        # the pytest extensions to install along pytest
-        # extensions: # optional
-        # the pytest options
-        # options: # optional
-        # the path to the output file to create
-        # output: # optional
-        # the path to the folder containing the tests
-        # paths: # optional, default is tests
-        # which tests have to be shown in the summary
-        # show: # optional
+          uv run pytest
