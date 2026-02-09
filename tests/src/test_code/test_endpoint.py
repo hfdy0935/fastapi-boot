@@ -7,35 +7,20 @@ import pytest
 def test_cbv(test_app1_client: TestClient):
     resp: Response = test_app1_client.get('/cbv')
     assert resp.status_code == 200
-    assert resp.json() == {
-        'code': 0,
-        'msg': 'cbv_get'
-    }
+    assert resp.json() == {'code': 0, 'msg': 'cbv_get'}
 
     resp: Response = test_app1_client.post(
-        '/cbv/prefix1/prefix2/prefix3/prefix4/prefix5/prefix6/prefix7')
+        '/cbv/prefix1/prefix2/prefix3/prefix4/prefix5/prefix6/prefix7'
+    )
     assert resp.status_code == 200
-    assert resp.json() == {
-        'code': 0,
-        'msg': 'cbv_prefix_post'
-    }
+    assert resp.json() == {'code': 0, 'msg': 'cbv_prefix_post'}
 
 
 @pytest.mark.anyio
 async def test_fbv(test_app1_async_client: AsyncClient):
     resp: Response = await test_app1_async_client.put('/fbv')
     assert resp.status_code == 200
-    assert resp.json() == {
-        'code': 0,
-        'msg': 'fbv_put'
-    }
-
-    resp: Response = await test_app1_async_client.delete('/fbv')
-    assert resp.status_code == 200
-    assert resp.json() == {
-        'code': 0,
-        'msg': 'fbv_delete'
-    }
+    assert resp.json() == {'code': 0, 'msg': 'fbv_put'}
 
 
 def test_websocket(app_instance: FastAPI):

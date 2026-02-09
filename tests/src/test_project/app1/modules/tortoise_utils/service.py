@@ -1,10 +1,14 @@
 from dataclasses import dataclass
-from fastapi_boot.core import Service
-from src.test_project.app1.modules.tortoise_utils.dao import UserDao, get_all_user, get_user_by_name
-from src.test_project.app1.modules.tortoise_utils.model import UserDTO
+from fastapi_boot.core import Injectable
+from .dao import (
+    UserDao,
+    get_all_user,
+    get_user_by_name,
+)
+from .model import UserDTO
 
 
-@Service
+@Injectable
 @dataclass
 class UserService:
     user_dao: UserDao

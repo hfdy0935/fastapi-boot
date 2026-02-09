@@ -14,8 +14,6 @@ from fastapi.types import IncEx
 from fastapi.utils import generate_unique_id
 from starlette.routing import BaseRoute
 
-from .shared import ScanMode
-
 T = TypeVar('T')
 HttpStrMethod = Literal[
     'GET',
@@ -57,12 +55,14 @@ class SpecificHttpRouteItemWithoutEndpointAndMethods:
     response_model_exclude_none: bool = False
     include_in_schema: bool = True
     response_class: type[Response] | Any = field(
-        default_factory=lambda: Default(JSONResponse))
+        default_factory=lambda: Default(JSONResponse)
+    )
     name: str | None = None
     callbacks: list[BaseRoute] | None = None
     openapi_extra: dict[str, Any] | None = None
     generate_unique_id_function: Any = field(
-        default_factory=lambda: Default(generate_unique_id))
+        default_factory=lambda: Default(generate_unique_id)
+    )
 
     @property
     def dict(self):
@@ -73,13 +73,15 @@ class SpecificHttpRouteItemWithoutEndpointAndMethods:
 class BaseHttpRouteItemWithoutEndpoint(SpecificHttpRouteItemWithoutEndpointAndMethods):
     """Req params without endpoint"""
 
-    methods: set[HTTPMethod | HttpStrMethod] | list[HTTPMethod |
-                                                    HttpStrMethod] = field(default_factory=lambda: ['GET'])
+    methods: set[HTTPMethod | HttpStrMethod] | list[HTTPMethod | HttpStrMethod] = field(
+        default_factory=lambda: ['GET']
+    )
 
 
 @dataclass
 class BaseHttpRouteItem:
     """req params"""
+
     endpoint: Callable
     path: str = ''
     response_model: Any = None
@@ -101,25 +103,28 @@ class BaseHttpRouteItem:
     response_model_exclude_none: bool = False
     include_in_schema: bool = True
     response_class: type[Response] | Any = field(
-        default_factory=lambda: Default(JSONResponse))
+        default_factory=lambda: Default(JSONResponse)
+    )
     name: str | None = None
     route_class_override: type[APIRoute] | None = None
     callbacks: list[BaseRoute] | None = None
     openapi_extra: dict[str, Any] | None = None
     generate_unique_id_function: Callable[[APIRoute], str] = field(
-        default_factory=lambda: Default(generate_unique_id))
+        default_factory=lambda: Default(generate_unique_id)
+    )
 
     def format_methods(self):
-        self.methods = [m.value if isinstance(
-            m, HTTPMethod) else m.upper() for m in self.methods]
+        self.methods = [
+            m.value if isinstance(m, HTTPMethod) else m.upper() for m in self.methods
+        ]
         return self
 
     def replace_endpoint(self, endpoint: Callable):
         self.endpoint = endpoint
         return self
 
-    def add_prefix(self, prefix: str):
-        self.path = prefix + self.path
+    def replace_path(self, path: str):
+        self.path = path
         return self
 
     def mount_to(self, anchor: APIRouter | FastAPI):
@@ -154,8 +159,8 @@ class WebSocketRouteItem:
         self.endpoint = endpoint
         return self
 
-    def add_prefix(self, prefix: str):
-        self.path = prefix + self.path
+    def replace_path(self, path: str):
+        self.path = path
         return self
 
     def mount_to(self, anchor: APIRouter | FastAPI):
@@ -183,58 +188,44 @@ class PrefixRouteRecord(Generic[T]):
 
 # ---------------------------------------------------- record ---------------------------------------------------- #
 @dataclass
-class AppRecord:
-    """fastapi_record in store"""
-
-    app: FastAPI
-    # 注入超时时间
-    inject_timeout: float
-    # 注入重试时间间隔，s
-    inject_retry_step: float
-    # 扫描模式
-    scan_mode: ScanMode
-
-    def repalce_app(self, app: FastAPI):
-        vars(app).update(vars(self.app))
-        self.app = app
-        return app
-
-    @property
-    def should_scan(self):
-        return self.scan_mode == 'on'
-
-
-@dataclass
 class UseMiddlewareRecord:
     """use_middleware record in controller"""
+
     # url+请求方法，用来定位要拦截的请求
     http_urls_methods: list[tuple[str, str]] = field(default_factory=list)
-    http_dispatches: list[Callable[[Request, Callable[[
-        Request], Coroutine[Any, Any, Response]]], Any]] = field(default_factory=list)
-    ws_dispatches: list[Callable[[WebSocket, Callable[[
-        WebSocket], Coroutine[Any, Any, None]]], None]] = field(default_factory=list)
+    http_dispatches: list[
+        Callable[[Request, Callable[[Request], Coroutine[Any, Any, Response]]], Any]
+    ] = field(default_factory=list)
+    ws_dispatches: list[
+        Callable[[WebSocket, Callable[[WebSocket], Coroutine[Any, Any, None]]], None]
+    ] = field(default_factory=list)
     ws_only_message: bool = False
 
     def add_http_middleware(self, app: FastAPI):
         """add midleware to app"""
-        # if not self.http_dispatches:
-        #     return
 
-        async def wrapper(request: Request, call_next: Callable[[Request], Coroutine[Any, Any, Any]]):
+        async def wrapper(
+            request: Request, call_next: Callable[[Request], Coroutine[Any, Any, Any]]
+        ):
             # exclude root_path
             scope_path = request.scope.get('path', '').replace(
-                request.scope.get('root_path', ''), '')
+                request.scope.get('root_path', ''), ''
+            )
             if (scope_path, request.method) in self.http_urls_methods:
                 for func in self.http_dispatches:
                     # "call_next" default param ==> save call_next of each loop to avoid "maximum recursion depth exceeded".
                     # "func" default params ==> save "func" of each loop to avoid repeatation of last func.
+
                     async def temp1(request, call_next=call_next, func=func):
                         async def temp2(request):
                             return await call_next(request)
+
                         return await func(request, temp2)
+
                     call_next = temp1
             # if no matched middleware, just call original call_next, else call the accural call_next.
             return await call_next(request)
+
         app.middleware('http')(wrapper)
 
     def add_ws_middleware(self, websocket: WebSocket):
@@ -243,25 +234,37 @@ class UseMiddlewareRecord:
 
         def wrapper1(target: Callable):
             """target: method need to be replace"""
+
             async def wrapper2(*args, **kwargs):
                 nonlocal target
                 call_next = target
                 for func in self.ws_dispatches:
                     # partial param websocket as placeholder
 
-                    async def temp1(websocket=websocket, call_next=call_next, func=func):
+                    async def temp1(
+                        websocket=websocket, call_next=call_next, func=func
+                    ):
                         async def temp2(websocket=websocket):
                             return await call_next(*args, **kwargs)
+
                         not_message = (args[0] or {}).get(
-                            'type', '') != 'websocket.send'
-                        return await temp2() if (not_message and self.ws_only_message) else await func(websocket, temp2)
+                            'type', ''
+                        ) != 'websocket.send'
+                        return (
+                            await temp2()
+                            if (not_message and self.ws_only_message)
+                            else await func(websocket, temp2)
+                        )
+
                     call_next = temp1  # type: ignore
                 return await call_next()
+
             return wrapper2
+
         websocket.send = wraps(websocket.send)(wrapper1(websocket.send))
 
-    def __add__(self, other: 'UseMiddlewareRecord') -> Self:
-        """merge http_dispatches in a controller or a prefix"""
+    def __add__(self, other: Self) -> Self:
+        """merge other http_dispatches"""
         self.http_dispatches.extend(other.http_dispatches)
         return self
 
@@ -269,11 +272,3 @@ class UseMiddlewareRecord:
 # ----------------------------------------------------- exception ---------------------------------------------------- #
 class InjectFailException(Exception):
     """inject fail"""
-
-
-class DependencyNotFoundException(Exception):
-    """dependency not found"""
-
-
-class AppNotFoundException(Exception):
-    """app not found"""

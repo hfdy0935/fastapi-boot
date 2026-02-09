@@ -12,16 +12,15 @@ from fastapi.utils import generate_unique_id
 from starlette.routing import BaseRoute
 from starlette.types import ASGIApp, Lifespan
 
+from fastapi_boot.core.DI import create_instance
+
 from .const import (
     PropNameConstant,
     UseMiddlewareReturnValuePlaceholder,
-    dep_store,
-    task_store,
-    use_dep_record_store
+    app_task_store,
+    use_dep_record_store,
 )
-from .DI import inject_init_deps_and_get_instance
 from .model import (
-    AppRecord,
     BaseHttpRouteItem,
     BaseHttpRouteItemWithoutEndpoint,
     EndpointRouteRecord,
@@ -31,27 +30,14 @@ from .model import (
 )
 from .model import SpecificHttpRouteItemWithoutEndpointAndMethods as SM
 from .model import WebSocketRouteItem, WebSocketRouteItemWithoutEndpoint
-from .utils import get_call_filename
 
 
 T = TypeVar('T', bound=Callable)
 RouterCls = TypeVar('RouterCls')
 
 
-def trans_path(path: str) -> str:
-    """
-    - Example：
-    > 1. a  => /a
-    > 2. /a => /a
-    > 3. a/ => /a
-    > 4. /a/ => /a
-    """
-    res = '/' + path.lstrip('/')
-    res = res.rstrip('/')
-    return '' if res == '/' else res
-
-
 # ---------------------------------------------------- Controller ---------------------------------------------------- #
+
 
 def get_use_result(cls: type[RouterCls]):
     """获取controller的use_xxx配置
@@ -67,31 +53,33 @@ def get_use_result(cls: type[RouterCls]):
     use_middleware_records: list[UseMiddlewareRecord] = []
     for k, v in getmembers(cls):
         if use_dep_record_store.has(v):
-            use_dep_dict.update({k: (cls_anno.get(k), v)})
+            use_dep_dict[k] = (cls_anno.get(k), v)
         elif (
-                isinstance(v, UseMiddlewareReturnValuePlaceholder)
-                and (attr := getattr(v, PropNameConstant.USE_MIDDLEWARE))
-                and isinstance(attr, UseMiddlewareRecord)
+            isinstance(v, UseMiddlewareReturnValuePlaceholder)
+            and (attr := getattr(v, PropNameConstant.USE_MIDDLEWARE))
+            and isinstance(attr, UseMiddlewareRecord)
         ):
             use_middleware_records.append(attr)
     return use_dep_dict, use_middleware_records
 
 
 def trans_endpoint(
-        instance: Any,
-        endpoint: Callable,
-        use_dep_dict: dict,
-        use_middleware_records: list[UseMiddlewareRecord]
+    instance: Any,
+    endpoint: Callable,
+    use_dep_dict: dict,
+    use_middleware_records: list[UseMiddlewareRecord],
 ):
-    """trans endpoint
-    1. change `self` param's default ===> Depends(lambda: instance). set kind ===> 'KEYWORD_ONLY';
-    2. add use_dep params. replace params. replace signature.
-    > or
-    1. new function(without 'self' param) extend endpoint(need add 'self' when call it);
-    2. add use_dep params. replace params. replace signature.
+    """
+    处理endpoint，添加use_dep依赖、替换self、替换websocket
 
-
-    add middleware to WebSocket instance of websocket endpoint'params if is_websocket
+    :param instance: 被Controller装饰的类的实例
+    :type instance: Any
+    :param endpoint: endpoint
+    :type endpoint: Callable
+    :param use_dep_dict: use_dep_dict
+    :type use_dep_dict: dict
+    :param use_middleware_records: use_middleware_records
+    :type use_middleware_records: list[UseMiddlewareRecord]
     """
     params: list[Parameter] = list(signature(endpoint).parameters.values())
     has_self = params[0].name == 'self' if params else False
@@ -101,8 +89,14 @@ def trans_endpoint(
     # add use_dep's deps
     for k, v in use_dep_dict.items():
         req_name = f'{PropNameConstant.USE_DEP_PARAM_PREFIX_IN_ENDPOINT}_{k}'
-        params.append(Parameter(
-            name=req_name, kind=Parameter.KEYWORD_ONLY, annotation=v[0], default=v[1]))
+        params.append(
+            Parameter(
+                name=req_name,
+                kind=Parameter.KEYWORD_ONLY,
+                annotation=v[0],
+                default=v[1],
+            )
+        )
     # replace endpoint
 
     @wraps(endpoint)
@@ -121,96 +115,130 @@ def trans_endpoint(
         else:
             return endpoint(*new_args, **kwargs)
 
-    setattr(new_endpoint, '__signature__', signature(
-        new_endpoint).replace(parameters=params))
+    setattr(
+        new_endpoint,
+        '__signature__',
+        signature(new_endpoint).replace(parameters=params),
+    )
     return new_endpoint
 
 
 def resolve_endpoint(
-        anchor: APIRouter,
-        api_route: EndpointRouteRecord,
-        instance: Any,
-        use_deps_dict: dict,
-        prefix: str,
-        use_middleware_records: list[UseMiddlewareRecord],
+    anchor: APIRouter,
+    api_route: EndpointRouteRecord,
+    instance: Any,
+    use_deps_dict: dict,
+    prefix: str,
+    use_middleware_records: list[UseMiddlewareRecord],
 ):
     """
-    1. trans_endpoint
-    2. add websocket middleware to websocket endpoint
-    3. mount endpoint to anchor and add middleware"""
-    path = anchor.prefix + api_route.record.path
+    处理endpoint，http中间件
+
+    :param anchor: 说明
+    :type anchor: APIRouter
+    :param api_route: 说明
+    :type api_route: EndpointRouteRecord
+    :param instance: 说明
+    :type instance: Any
+    :param use_deps_dict: 说明
+    :type use_deps_dict: dict
+    :param prefix: 说明
+    :type prefix: str
+    :param use_middleware_records: 说明
+    :type use_middleware_records: list[UseMiddlewareRecord]
+    """
+    path = prefix + api_route.record.path
     # http
     if isinstance(api_route.record, BaseHttpRouteItem):
-        urls_methods = [(path, method.upper())
-                        for method in api_route.record.methods]
+        urls_methods = [(path, method.upper()) for method in api_route.record.methods]
         for r in use_middleware_records:
             r.http_urls_methods.extend(urls_methods)
     new_endpoint = trans_endpoint(
         instance, api_route.record.endpoint, use_deps_dict, use_middleware_records
     )
-    api_route.record.replace_endpoint(
-        new_endpoint).add_prefix(prefix).mount_to(anchor)
+    path_in_controller = '/'.join(path.split('/')[2:])
+    if path_in_controller != '':
+        path_in_controller = '/' + path_in_controller
+    api_route.record.replace_endpoint(new_endpoint).replace_path(
+        path_in_controller
+    ).mount_to(anchor)
 
 
 def resolve_class_based_view(
-        anchor: APIRouter, route_record: PrefixRouteRecord[RouterCls], prefix: str, app_record: AppRecord
+    anchor: APIRouter,
+    route_record: PrefixRouteRecord[RouterCls],
+    prefix: str,
+    controller_id: int,
 ):
     """
-    Args:
-        anchor (APIRouter): 挂载锚点
-        route_record (PrefixRouteRecord[RouterCls])
-        prefix (str): 路径前缀
-        app_record (AppRecord)
+    resolve_class_based_view
+
+    :param anchor: 说明
+    :type anchor: APIRouter
+    :param route_record: 说明
+    :type route_record: PrefixRouteRecord[RouterCls]
+    :param prefix: 说明
+    :type prefix: str
+    :param controller_id: 说明
+    :type controller_id: str
+
     """
     cls: type[RouterCls] = route_record.cls
     use_deps_dict, use_middleware_records = get_use_result(cls)
-    instance: RouterCls = inject_init_deps_and_get_instance(app_record, cls)
+    instance: RouterCls = create_instance(cls)
+    new_prefix = prefix + route_record.prefix
 
     for v in vars(cls).values():
-        if hasattr(v, PropNameConstant.CONTROLLER_ROUTE_RECORD) and (attr := getattr(v, PropNameConstant.CONTROLLER_ROUTE_RECORD)):
-            new_prefix = prefix + route_record.prefix
+        if hasattr(v, PropNameConstant.CONTROLLER_ROUTE_RECORD) and (
+            attr := getattr(v, PropNameConstant.CONTROLLER_ROUTE_RECORD)
+        ):
             if isinstance(attr, EndpointRouteRecord):
-                resolve_endpoint(anchor, attr, instance, use_deps_dict,
-                                 new_prefix, use_middleware_records)
+                resolve_endpoint(
+                    anchor,
+                    attr,
+                    instance,
+                    use_deps_dict,
+                    new_prefix,
+                    use_middleware_records,
+                )
             elif isinstance(attr, PrefixRouteRecord):
-                resolve_class_based_view(anchor, attr, new_prefix, app_record)
-    # add middleware
+                resolve_class_based_view(anchor, attr, new_prefix, controller_id)
+    # add http middleware
     if use_middleware_records:
-        reduce(lambda a, b: a + b,
-               use_middleware_records).add_http_middleware(app_record.app)
-    return instance
+        app_task_store.add(
+            controller_id,
+            lambda app: reduce(
+                lambda a, b: a + b, use_middleware_records
+            ).add_http_middleware(app),
+        )
 
 
 class Controller(APIRouter):
     def __init__(
-            self,
-            prefix: str = "",
-            *,
-            tags: list[str | Enum] | None = None,
-            dependencies: Sequence[params.Depends] | None = None,
-            default_response_class: type[Response] = Default(JSONResponse),
-            responses: dict[int | str, dict[str, Any]] | None = None,
-            callbacks: list[BaseRoute] | None = None,
-            routes: list[BaseRoute] | None = None,
-            redirect_slashes: bool = True,
-            default: ASGIApp | None = None,
-            dependency_overrides_provider: Any | None = None,
-            route_class: type[APIRoute] = APIRoute,
-            on_startup: Sequence[Callable[[], Any]] | None = None,
-            on_shutdown: Sequence[Callable[[], Any]] | None = None,
-            lifespan: Lifespan[Any] | None = None,
-            deprecated: bool | None = None,
-            include_in_schema: bool = True,
-            generate_unique_id_function: Callable[[
-                APIRoute], str] = Default(generate_unique_id),
-            # 被导入后是否自动include到app下
-            auto_include: bool = True,
-            # 若不自动include，可通过 类型+名字 依赖注入的方式获取APIRouter实例，名字是什么，默认是被装饰的类/函数的__name__
-            dep_name: str = ''
+        self,
+        prefix: str = '',
+        *,
+        tags: list[str | Enum] | None = None,
+        dependencies: Sequence[params.Depends] | None = None,
+        default_response_class: type[Response] = Default(JSONResponse),
+        responses: dict[int | str, dict[str, Any]] | None = None,
+        callbacks: list[BaseRoute] | None = None,
+        routes: list[BaseRoute] | None = None,
+        redirect_slashes: bool = True,
+        default: ASGIApp | None = None,
+        dependency_overrides_provider: Any | None = None,
+        route_class: type[APIRoute] = APIRoute,
+        on_startup: Sequence[Callable[[], Any]] | None = None,
+        on_shutdown: Sequence[Callable[[], Any]] | None = None,
+        lifespan: Lifespan[Any] | None = None,
+        deprecated: bool | None = None,
+        include_in_schema: bool = True,
+        generate_unique_id_function: Callable[[APIRoute], str] = Default(
+            generate_unique_id
+        ),
     ):
-        self.prefix = trans_path(prefix)
         super().__init__(
-            prefix=self.prefix,
+            prefix=prefix,
             tags=tags,
             dependencies=dependencies,
             default_response_class=default_response_class,
@@ -228,19 +256,10 @@ class Controller(APIRouter):
             include_in_schema=include_in_schema,
             generate_unique_id_function=generate_unique_id_function,
         )
-        self.auto_include = auto_include
-        self.dep_name = dep_name
 
     def __call__(self, cls: type[RouterCls]) -> type[RouterCls]:
-        def task(app_record: AppRecord):
-            resolve_class_based_view(
-                self, PrefixRouteRecord(cls), '', app_record)
-            if self.auto_include:
-                app_record.app.include_router(self)
-            else:
-                dep_name = self.dep_name or cls.__name__
-                dep_store.add_dep_by_name(APIRouter, dep_name, self)
-        task_store.schedule(get_call_filename(), task)
+        resolve_class_based_view(self, PrefixRouteRecord(cls, self.prefix), '', id(cls))
+        app_task_store.add(id(cls), lambda app: app.include_router(self))
         return cls
 
     def __getattribute__(self, k: str):
@@ -251,25 +270,20 @@ class Controller(APIRouter):
                 def wrapper(endpoint):
                     # @Controller(...).websocket(...)  @Controller(...).websocket_route(...)
                     if k in ['websocket', 'websocket_route']:
-                        WebSocketRouteItem(
-                            endpoint, *args, **kwds).mount_to(self)
+                        WebSocketRouteItem(endpoint, *args, **kwds).mount_to(self)
                     elif k == 'api_route':
-                        BaseHttpRouteItem(endpoint, *args, **
-                                          kwds).mount_to(self)
+                        BaseHttpRouteItem(endpoint, *args, **kwds).mount_to(self)
                     else:
-                        BaseHttpRouteItem(endpoint, methods=[
-                                          k], *args, **kwds).mount_to(self)
-
-                    def task(app_record: AppRecord):
-                        if self.auto_include:
-                            app_record.app.include_router(self)
-                        else:
-                            dep_name = self.dep_name or endpoint.__name__
-                            dep_store.add_dep_by_name(
-                                APIRouter, dep_name, self)
-                    task_store.schedule(get_call_filename(), task)
+                        BaseHttpRouteItem(
+                            endpoint, methods=[k], *args, **kwds
+                        ).mount_to(self)
+                    app_task_store.add(
+                        id(endpoint), lambda app: app.include_router(self)
+                    )
                     return endpoint
+
                 return wrapper
+
             return decorator
         return attr
 
@@ -279,15 +293,12 @@ class Controller(APIRouter):
 
 class Req(BaseHttpRouteItemWithoutEndpoint):
     def __call__(self, endpoint: T) -> T:
-        route_item = BaseHttpRouteItem(
-            endpoint=endpoint, **self.dict).format_methods()
+        route_item = BaseHttpRouteItem(endpoint=endpoint, **self.dict).format_methods()
         # 顶层
         if len(endpoint.__qualname__.split('.')) == 1:
-            task_store.schedule(get_call_filename(
-                2), lambda app_record: route_item.mount_to(app_record.app))
+            app_task_store.add(id(endpoint), lambda app: route_item.mount_to(app))
         else:
             # 作为Controller的方法
-            self.path = trans_path(self.path)
             route_record = EndpointRouteRecord(route_item)
             setattr(endpoint, PropNameConstant.CONTROLLER_ROUTE_RECORD, route_record)
         return endpoint
@@ -338,11 +349,9 @@ class WebSocket(WebSocketRouteItemWithoutEndpoint):
         route_item = WebSocketRouteItem(endpoint=endpoint, **self.dict)
         # 顶层
         if len(endpoint.__qualname__.split('.')) == 1:
-            task_store.schedule(
-                get_call_filename(), lambda app_record: route_item.mount_to(app_record.app))
+            app_task_store.add(id(endpoint), lambda app: route_item.mount_to(app))
         else:
             # 作为Controller的方法
-            self.path = trans_path(self.path)
             route_record = EndpointRouteRecord(route_item)
             setattr(endpoint, PropNameConstant.CONTROLLER_ROUTE_RECORD, route_record)
         return endpoint
@@ -373,12 +382,10 @@ def Prefix(prefix: str = ""):
                 return self.q
     ```
     """
-    prefix = trans_path(prefix)
 
     def wrapper(cls: type[C]) -> type[C]:
         prefix_route_record = PrefixRouteRecord(cls=cls, prefix=prefix)
-        setattr(cls, PropNameConstant.CONTROLLER_ROUTE_RECORD,
-                prefix_route_record)
+        setattr(cls, PropNameConstant.CONTROLLER_ROUTE_RECORD, prefix_route_record)
         return cls
 
     return wrapper

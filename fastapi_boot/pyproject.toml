@@ -1,6 +1,6 @@
 [project]
 name = "fastapi-boot"
-version = "0.0.47"
+version = "0.0.48"
 description = "FastAPI tools"
 readme = "README.md"
 authors = [{ name = "hfdy", email = "hfdy09354121794@gmail.com" }]
@@ -19,7 +19,7 @@ fastapi-boot = "fastapi_boot.cli.cli:main"
 db = ["tortoise-orm<=0.24.1"]
 db-mysql = ["aiomysql>=0.3.2", "tortoise-orm<=0.24.1"]
 db-postgresql = ["asyncpg>=0.31.0", "tortoise-orm<=0.24.1"]
-fb-all = ["aiomysql>=0.3.2", "asyncpg>=0.31.0", "tortoise-orm<=0.24.1"]
+db-all = ["aiomysql>=0.3.2", "asyncpg>=0.31.0", "tortoise-orm<=0.24.1"]
 
 [project.urls]
 Homepage = "https://github.com/hfdy0935/fastapi-boot"

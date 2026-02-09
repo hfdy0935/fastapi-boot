@@ -8,7 +8,9 @@ from src.test_project.app1.config import TortoiseConfig
 
 @asynccontextmanager
 async def lifespan(_):
-    await Tortoise.init(db_url=TortoiseConfig.db_url, modules=dict(models=TortoiseConfig.modules))
+    await Tortoise.init(
+        db_url=TortoiseConfig.db_url, modules=dict(models=TortoiseConfig.modules)
+    )
     await Tortoise.generate_schemas()
     yield
     await Tortoise.close_connections()

@@ -1,12 +1,12 @@
-
-
-class ScanOnTemplate:
+class FastAPIBootCLITemplate:
     @classmethod
     def gen_main_template(cls, host: str, port: int, reload: bool, name: str):
+        constroller_cls_name = f'{name}Controller'
         return f"""from fastapi_boot.core import provide_app
 import uvicorn
+from src.controller.{name} import FBVController, {constroller_cls_name}
 
-app = provide_app()
+app = provide_app(controllers=[FBVController, {constroller_cls_name}])
 
 
 if __name__ == '__main__':
@@ -21,7 +21,7 @@ from fastapi_boot.core import Controller, Get, Post
 
 
 @Controller('/fbv', tags=['fbv controller']).get('')
-def _():
+def FBVController():
     return 'fbv'
 
 

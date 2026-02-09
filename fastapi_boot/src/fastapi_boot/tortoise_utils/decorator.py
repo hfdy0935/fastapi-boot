@@ -42,9 +42,8 @@ formatter = Formatter()
 class Sql:
     """执行原生sql语句
 
-    1. 支持**装饰器**和**直接调用调用**两种写法
-    2. 占位符`{var_name!r}`时**字符串带引号**
-    3. 返回值类型注解**可省略**，固定返回元组: (rows: `int`, result: `list[dict]`)
+    1. 支持**装饰器**和**直接异步调用**两种写法
+    2. 返回值类型注解**可省略**，固定返回元组: (rows: `int`, result: `list[dict]`)
 
     >>> Example
     ```python
@@ -54,7 +53,7 @@ class Sql:
     async def get_user_by_id(id: str) -> tuple[int, list[dict]]:...
 
     class Bar:
-        @Sql('select * from {table} where id={dto.id} and name={dto.name!r}').fill(table='User')
+        @Sql('select * from {table} where id={dto.id} and name={dto.name}').fill(table='User')
         async def get_user(self, dto: UserDTO):...
 
     async def get_user_by_id(id: str):
@@ -69,7 +68,7 @@ class Sql:
         """
 
         Args:
-            sql (str): 原始sql语句，用`{变量名}`占位，支持`{ins.a}`等方式取属性
+            sql (str): 原始sql语句，用`{变量名}`占位，支持`{ins.a}`、`{arr[0]}`等方式取属性
             connection_name (str, optional): 连接名. Defaults to 'default'.
         """
         self.sql = sql.strip()
@@ -115,6 +114,7 @@ class Sql:
                 res = f'${cnt}'
                 cnt += 1
                 return res
+
             self.sql = re.compile(f'{self.placeholder}').sub(fn, self.sql)
 
     def fill(self, **kwds):
@@ -124,7 +124,7 @@ class Sql:
             **kwds (Any)
         """
         for k, v in kwds.items():
-            self.sql = self.sql.replace('{'+f'{k}'+'}', v)
+            self.sql = self.sql.replace('{' + f'{k}' + '}', v)
         return self
 
     async def execute(self) -> tuple[int, list[dict[Any, Any]]]:
@@ -159,12 +159,16 @@ class Sql:
         async def wrapper(*args: P.args, **kwds: P.kwargs):
             calling_params = get_func_params_dict(func, *args, **kwds)
             # 根据占位符
-            actual_params = [eval(param[1:-1], calling_params)
-                             for param in self.matched_params]
-            rows, resp = await Tortoise.get_connection(self.connection_name).execute_query(self.sql, actual_params)
+            actual_params = [
+                eval(param[1:-1], calling_params) for param in self.matched_params
+            ]
+            rows, resp = await Tortoise.get_connection(
+                self.connection_name
+            ).execute_query(self.sql, actual_params)
             if self.is_sqlite:
                 resp = list(map(dict, resp))
             return rows, resp
+
         return cast(Callable[P, Coroutine[Any, Any, tuple[int, list[dict]]]], wrapper)
 
 
@@ -179,12 +183,12 @@ class Select(Sql):
         name: str
         age: int
 
-    @Select('select * from user where id={id!r}')
+    @Select('select * from user where id={id}')
     async def get_user_by_id1(id: str) -> User:...
 
 
     async def get_user_by_id2(id: str) -> User:
-        return await Select('select * from user where id={id!r}').fill(id=id).execute(User)
+        return await Select('select * from user where id={id}').fill(id=id).execute(User)
 
     # 可能的返回值 User(id='1', name='foo', age=20) 或 None
 
@@ -236,11 +240,21 @@ class Select(Sql):
     async def execute(self, expect: type[list[TM]]) -> list[TM]: ...
 
     @overload
-    async def execute(self, expect: None | type[list] |
-                      type[list[dict]] = None) -> list[dict]: ...
+    async def execute(
+        self, expect: None | type[list] | type[list[dict]] = None
+    ) -> list[dict]: ...
 
     async def execute(
-        self, expect: type[PM] | type[TM] | type[list[PM]] | type[list[TM]] | None | type[list] | type[list[dict]] = None
+        self,
+        expect: (
+            type[PM]
+            | type[TM]
+            | type[list[PM]]
+            | type[list[TM]]
+            | None
+            | type[list]
+            | type[list[dict]]
+        ) = None,
     ) -> PM | TM | list[PM] | list[TM] | None | list[dict]:
         """非装饰器用法时执行sql
 
@@ -250,26 +264,31 @@ class Select(Sql):
         Returns:
             `PM | TM | list[PM] | list[TM] | None | list[dict]`: _description_
         """
+
         async def func(): ...
 
         setattr(func, '__annotations__', {'return': expect})
         return await self(func)()
 
     @overload
-    def __call__(self, func: Callable[P, Coroutine[Any, Any, PM]]) -> Callable[P,
-                                                                               Coroutine[Any, Any, PM | None]]: ...
+    def __call__(
+        self, func: Callable[P, Coroutine[Any, Any, PM]]
+    ) -> Callable[P, Coroutine[Any, Any, PM | None]]: ...
 
     @overload
-    def __call__(self, func: Callable[P, Coroutine[Any, Any, TM]]) -> Callable[P,
-                                                                               Coroutine[Any, Any, TM | None]]: ...
+    def __call__(
+        self, func: Callable[P, Coroutine[Any, Any, TM]]
+    ) -> Callable[P, Coroutine[Any, Any, TM | None]]: ...
 
     @overload
-    def __call__(self, func: Callable[P, Coroutine[Any, Any, list[PM]]]) -> Callable[P,
-                                                                                     Coroutine[Any, Any, list[PM]]]: ...
+    def __call__(
+        self, func: Callable[P, Coroutine[Any, Any, list[PM]]]
+    ) -> Callable[P, Coroutine[Any, Any, list[PM]]]: ...
 
     @overload
-    def __call__(self, func: Callable[P, Coroutine[Any, Any, list[TM]]]) -> Callable[P,
-                                                                                     Coroutine[Any, Any, list[TM]]]: ...
+    def __call__(
+        self, func: Callable[P, Coroutine[Any, Any, list[TM]]]
+    ) -> Callable[P, Coroutine[Any, Any, list[TM]]]: ...
 
     @overload
     def __call__(
@@ -278,8 +297,18 @@ class Select(Sql):
 
     def __call__(
         self,
-        func: Callable[P, Coroutine[Any, Any, PM | TM | list[PM] | list[TM] | None | list | list[dict]]] | None,
-    ) -> Callable[P, Coroutine[Any, Any, PM | TM | list[PM] | list[TM] | None | list[dict]]]:
+        func: (
+            Callable[
+                P,
+                Coroutine[
+                    Any, Any, PM | TM | list[PM] | list[TM] | None | list | list[dict]
+                ],
+            ]
+            | None
+        ),
+    ) -> Callable[
+        P, Coroutine[Any, Any, PM | TM | list[PM] | list[TM] | None | list[dict]]
+    ]:
         """
 
         Args:
@@ -293,7 +322,12 @@ class Select(Sql):
 
         @wraps(func)  # type: ignore
         async def wrapper(*args: P.args, **kwds: P.kwargs):
-            lines, resp = await super_class.__call__(cast(Callable[P, Coroutine[Any, Any, None | tuple[int, list[dict]]]], func))(*args, **kwds)
+            lines, resp = await super_class.__call__(
+                cast(
+                    Callable[P, Coroutine[Any, Any, None | tuple[int, list[dict]]]],
+                    func,
+                )
+            )(*args, **kwds)
             if anno is None or anno is list:
                 return resp
             elif get_origin(anno) is list:
@@ -305,6 +339,7 @@ class Select(Sql):
                         f'查到了 {lines} 条结果, 但期望类型是 "{anno.__name__}", 因此只返回第一条结果'
                     )
                 return anno(**resp[0]) if len(resp) > 0 else None
+
         return wrapper
 
 
@@ -333,7 +368,9 @@ class Insert(Sql):
 
         return super().execute()
 
-    def __call__(self, func: Callable[P, Coroutine[Any, Any, None | int]]) -> Callable[P, Coroutine[Any, Any, int]]:
+    def __call__(
+        self, func: Callable[P, Coroutine[Any, Any, None | int]]
+    ) -> Callable[P, Coroutine[Any, Any, int]]:
         """
 
         Args:
@@ -346,7 +383,15 @@ class Insert(Sql):
 
         @wraps(func)
         async def wrapper(*args: P.args, **kwds: P.kwargs) -> int:
-            return (await super_class.__call__(cast(Callable[P, Coroutine[Any, Any, None | tuple[int, list[dict]]]], func))(*args, **kwds))[0]
+            return (
+                await super_class.__call__(
+                    cast(
+                        Callable[P, Coroutine[Any, Any, None | tuple[int, list[dict]]]],
+                        func,
+                    )
+                )(*args, **kwds)
+            )[0]
+
         return wrapper
 
 

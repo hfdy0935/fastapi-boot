@@ -1,22 +1,33 @@
 from fastapi import WebSocket
-from fastapi_boot.core import Controller, Get, Prefix, WS, use_http_middleware, use_ws_middleware
-from src.test_project.app1.modules.middleware.middleware import counter_plus_one_http_middleware1, counter_plus_one_http_middleware2, counter_minus_one_websocket_middleware
+from fastapi_boot.core import (
+    Controller,
+    Get,
+    Prefix,
+    WS,
+    use_http_middleware,
+    use_ws_middleware,
+)
+from src.test_project.app1.modules.middleware.middleware import (
+    counter_plus_one_http_middleware1,
+    counter_plus_one_http_middleware2,
+    counter_minus_one_websocket_middleware,
+)
 
 
 @Controller('/middleware')
 class MiddlewareController:
-    @Get('/global_only')
-    def fn1(self):
-        return 'ok'
 
     @Prefix()
     class _:
         _ = use_http_middleware(
-            counter_plus_one_http_middleware1, counter_plus_one_http_middleware2)
+            counter_plus_one_http_middleware1,
+            counter_plus_one_http_middleware2,
+        )
         __ = use_ws_middleware(
-            counter_minus_one_websocket_middleware, only_message=True)
+            counter_minus_one_websocket_middleware, only_message=True
+        )
 
-        @Get('/global_local2')
+        @Get('/local')
         def fn2(self):
             return 'ok'
 

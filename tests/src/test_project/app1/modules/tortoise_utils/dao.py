@@ -1,4 +1,4 @@
-from fastapi_boot.core import Repository
+from fastapi_boot.core import Injectable
 from fastapi_boot.tortoise_utils import Select, Insert, Delete
 
 from src.test_project.app1.modules.tortoise_utils.model import User, UserDTO, UserVO
@@ -8,20 +8,27 @@ from src.test_project.app1.modules.tortoise_utils.model import User, UserDTO, Us
 @Select('select * from {user}').fill(user=User.Meta.table)
 async def get_all_user() -> list[UserVO]: ...
 
+
 # 函数调用
 
 
 async def get_user_by_name(name: str):
-    return await Select('select * from {user} where name="{name}"').fill(user=User.Meta.table, name=name).execute(list[UserVO])
+    return (
+        await Select('select * from {user} where name="{name}"')
+        .fill(user=User.Meta.table, name=name)
+        .execute(list[UserVO])
+    )
 
 
-@Repository
+@Injectable
 class UserDao:
 
     # 方法装饰器
-    @Insert("""
+    @Insert(
+        """
     insert into {table} (name,age) values({user.name}, {user.age})
-    """).fill(table=User.Meta.table)
+    """
+    ).fill(table=User.Meta.table)
     async def create(self, user: UserDTO): ...
 
     async def delete_by_name(self, name: str):

@@ -13,6 +13,7 @@ class BookController:
     @Post()
     async def add_book(self, book: BookDTO):
         self.book_service.add_book(book)
+        return 'ok'
 
     @Get('/cnt')
     async def get_book_cnt(self):

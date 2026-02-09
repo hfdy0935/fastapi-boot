@@ -47,12 +47,7 @@ from fastapi_boot.core import Controller, Get, provide_app, Post
 import uvicorn
 
 
-# 传参FastAPI实例，不传时会自动创建并返回
-# provide_app中会收集app，并在fbv、cbv中自动挂载路由
-app = provide_app()
-
-
-# fbv, function-based view，参数和app.get一样
+# fbv, function based view
 @Get('/r1')
 def top_level_fbv1():
     return '/r1'
@@ -67,19 +62,20 @@ def top_level_fbv2():
 # cbv, class based view
 @Controller('/r3')
 class CBVController:
-    # 参数和app.get一样
     @Get('/1')
     async def cbv_endpoint1(self):
         return '/r3/1'
 
-    # 参数和app.post一样
     @Post('/2')
     def cbv_endpoint2(self, q: Annotated[str, Query()]):
         return dict(query=q, path='/r3/2')
 
 
+app = provide_app(controllers=[top_level_fbv1, top_level_fbv2, CBVController])
+
+
 if __name__ == '__main__':
-    uvicorn.run('main1:app', reload=True)
+    uvicorn.run('main:app', reload=True)
 ```
 
 - 用fastapi
@@ -126,38 +122,21 @@ if __name__ == '__main__':
 
 ### 1.3  💡通过CLI生成：
 ```bash
-fastapi-boot --host=localhost --port=8000 --reload --name=Demo --scan_mode=on
+fastapi-boot --host=localhost --port=8000 --reload --name=Demo
 ```
 <img src="https://raw.githubusercontent.com/hfdy0935/fastapi-boot/refs/heads/main/assets/image-1.png"/>
 
 
-## 2. 两种启动方式
-### 2.1 扫描（默认）
-> **自动扫描项目下所有以`.py`结尾的文件，可通过`exclude_scan_paths`排除指定<span style="color:red">目录/模块的路径</span>**
-
-<img src="https://raw.githubusercontent.com/hfdy0935/fastapi-boot/refs/heads/main/assets/image-3.png"/>
-
-### 3.3 手动导入
-
-<img src="https://raw.githubusercontent.com/hfdy0935/fastapi-boot/refs/heads/main/assets/image-2.png"/>
-
-
-## 3. 所有API
+## 2. 所有API
 
 ```py
 from fastapi_boot.core import (
-    Bean,
-    Inject,
     Injectable,
-    ExceptionHandler,
-    Lifespan,
-    provide_app,
-    on_app_ready,
-    use_dep,
-    use_http_middleware,
-    use_ws_middleware,
-    HTTPMiddleware,
-    Lazy,
+    provide_app, 
+    use_dep, 
+    use_http_middleware, 
+    use_ws_middleware, 
+    inject.
     Controller,
     Delete,
     Get,
@@ -169,11 +148,7 @@ from fastapi_boot.core import (
     Put,
     Req,
     Trace,
-    WS,
-    Autowired,
-    Component,
-    Repository,
-    Service,
+    WebSocket as WS,
 )
 
 # tortoise工具

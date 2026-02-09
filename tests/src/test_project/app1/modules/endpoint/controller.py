@@ -1,15 +1,12 @@
 from fastapi import FastAPI, WebSocket
-from fastapi_boot.core import Controller, Get, Prefix, Post, WS, on_app_ready
+from fastapi_boot.core import Controller, Get, Prefix, Post, WS
 
 
 @Controller('/cbv')
 class EndpointController:
     @Get()
     def func1(self):
-        return {
-            'code': 0,
-            'msg': 'cbv_get'
-        }
+        return {'code': 0, 'msg': 'cbv_get'}
 
     @Prefix('/prefix1')
     class _:
@@ -27,28 +24,12 @@ class EndpointController:
                             class _:
                                 @Post()
                                 async def func2(self):
-                                    return {
-                                        'code': 0,
-                                        'msg': 'cbv_prefix_post'
-                                    }
+                                    return {'code': 0, 'msg': 'cbv_prefix_post'}
 
 
 @Controller('/fbv').put('')
 async def func3():
-    return {
-        'code': 0,
-        'msg': 'fbv_put'
-    }
-
-
-@on_app_ready
-def app_ready_callback(app: FastAPI):
-    @app.delete('/fbv')
-    def _():
-        return {
-            'code': 0,
-            'msg': 'fbv_delete'
-        }
+    return {'code': 0, 'msg': 'fbv_put'}
 
 
 @Controller('/websocket')
@@ -58,3 +39,6 @@ class WebSocketController:
         await websocket.accept()
         await websocket.send_json({"msg": "Hello WebSocket"})
         await websocket.close()
+
+
+endpoint_controllers = [EndpointController, func3, WebSocketController]

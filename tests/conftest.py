@@ -25,15 +25,13 @@ def test_app2_client():
 
 @pytest.fixture(scope='module')
 def test_app1_async_client():
-    ac = AsyncClient(transport=ASGITransport(
-        app=app), base_url="http://test1/app1")
+    ac = AsyncClient(transport=ASGITransport(app=app), base_url="http://test1/app1")
     yield ac
 
 
 @pytest.fixture(scope='module')
 def test_app2_async_client():
-    ac = AsyncClient(transport=ASGITransport(
-        app=app), base_url="http://test1/app2")
+    ac = AsyncClient(transport=ASGITransport(app=app), base_url="http://test1/app2")
     yield ac
 
 
@@ -41,8 +39,7 @@ def test_app2_async_client():
 async def init_db():
     await Tortoise.init(
         db_url='sqlite://:memory:',
-        modules={'models': [
-            'src.test_project.app1.modules.tortoise_utils.model']}
+        modules={'models': ['src.test_project.app1.modules.tortoise_utils.model']},
     )
     await Tortoise.generate_schemas()
     yield

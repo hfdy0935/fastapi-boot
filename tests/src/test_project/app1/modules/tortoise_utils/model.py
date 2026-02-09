@@ -9,7 +9,7 @@ T = TypeVar('T')
 
 class BaseResp(BaseModel, Generic[T]):
     code: int = 200
-    msg: str = ''
+    msg: str = '请求成功'
     data: T | NoneType = None
 
 
@@ -28,5 +28,4 @@ class UserVO(BaseModel):
     age: int
 
 
-class UserDTO(UserVO):
-    ...
+class UserDTO(UserVO): ...

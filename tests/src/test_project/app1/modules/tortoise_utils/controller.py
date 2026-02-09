@@ -2,9 +2,8 @@ from dataclasses import dataclass
 from typing import Annotated
 from fastapi import Query
 from fastapi_boot.core import Controller, Get, Post, Delete
-from src.test_project.app1.modules.tortoise_utils.service import UserService
-from src.test_project.app1.modules.tortoise_utils.model import BaseResp, UserDTO, UserVO
-from src.test_project.app1.modules.tortoise_utils.expection import CreateUserFailException
+from .service import UserService
+from .model import BaseResp, UserDTO, UserVO
 
 
 @Controller('/user')
@@ -26,7 +25,7 @@ class UserController:
     async def create_user(self, dto: UserDTO):
         line_cnt = await self.user_service.create(dto)
         if line_cnt == 0:
-            raise CreateUserFailException()
+            return BaseResp(code=500, msg='创建失败')
         return BaseResp(data=line_cnt)
 
     @Delete('/all', response_model=BaseResp[int])
