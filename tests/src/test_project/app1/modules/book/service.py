@@ -1,13 +1,14 @@
+from typing import Annotated
+
 from fastapi_boot.core import Injectable
 from src.test_project.app1.modules.book.models import Book, BookDTO
-from src.test_project.app1.modules.book.beans import books
 
 
 @Injectable
 class BookService:
 
-    def __init__(self) -> None:
-        self.books = {b.name: b for b in books}
+    def __init__(self, books: Annotated[list[Book], '四大名著']) -> None:
+        self.books = {book.name: book for book in books}
 
     def exist_book(self, name: str):
         return name in self.books

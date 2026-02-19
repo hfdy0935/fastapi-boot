@@ -1,6 +1,6 @@
 [project]
 name = "fastapi-boot-project"
-version = "0.0.48"
+version = "0.0.50"
 description = "FastAPI tools"
 readme = "README.md"
 authors = [{ name = "hfdy", email = "hfdy09354121794@gmail.com" }]

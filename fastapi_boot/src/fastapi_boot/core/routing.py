@@ -12,7 +12,7 @@ from fastapi.utils import generate_unique_id
 from starlette.routing import BaseRoute
 from starlette.types import ASGIApp, Lifespan
 
-from fastapi_boot.core.DI import create_instance
+from fastapi_boot.core.DI import create_injectable_instance
 
 from .const import (
     PropNameConstant,
@@ -185,7 +185,7 @@ def resolve_class_based_view(
     """
     cls: type[RouterCls] = route_record.cls
     use_deps_dict, use_middleware_records = get_use_result(cls)
-    instance: RouterCls = create_instance(cls)
+    instance: RouterCls = create_injectable_instance(cls)
     new_prefix = prefix + route_record.prefix
 
     for v in vars(cls).values():

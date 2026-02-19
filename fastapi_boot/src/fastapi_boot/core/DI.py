@@ -49,7 +49,7 @@ def inject_params_deps(params: list[Parameter]):
     return position_params, keyword_params
 
 
-def create_instance(cls: type[T]) -> T:
+def create_injectable_instance(cls: type[T]) -> T:
     old_params = list(signature(cls.__init__).parameters.values())[1:]  # omit self
     new_params = [
         i
@@ -83,12 +83,68 @@ def Injectable(class_or_name: str | type[T], /):
 
     """
     if isclass(class_or_name):
-        dep_store.add_dep(class_or_name, None, create_instance(class_or_name))
+        dep_store.add_dep(
+            class_or_name, None, create_injectable_instance(class_or_name)
+        )
         return class_or_name
     else:
 
         def wrapper(cls: type[T], /):
-            dep_store.add_dep(cls, class_or_name, create_instance(cls))
+            dep_store.add_dep(cls, class_or_name, create_injectable_instance(cls))
             return cls
+
+        return wrapper
+
+
+def create_bean_instance(func: Callable[[Any], T]) -> T:
+    params = list(signature(func).parameters.values())
+    params = [
+        i
+        for i in params
+        if i.kind not in (Parameter.VAR_KEYWORD, Parameter.VAR_POSITIONAL)
+    ]  # omit *args、**kwargs
+    calling_params = inject_params_deps(params)
+    instance = func(*calling_params[0], **calling_params[1])
+    return instance
+
+
+@overload
+def Bean(func_or_name: str, /) -> Callable[[Callable[..., T]], T]: ...
+
+
+@overload
+def Bean(func_or_name: Callable[..., T], /) -> Callable[..., T]: ...
+
+
+def Bean(func_or_name: str | Callable[..., T], /):
+    """
+    # Example
+    ```python
+    @Bean
+    def foo() -> User:
+        return User(name='foo', age=18)
+
+    @Bean('bar')
+    def bar() -> User:
+        return User(name='bar', age=19)
+    ```
+
+    """
+    if callable(func_or_name):
+        tp = func_or_name.__annotations__.get('return', None)
+        assert (
+            tp
+        ), f'The function "{func_or_name.__name__}" decorated by Bean decorator must have a return type annotation.'
+        dep_store.add_dep(tp, None, create_bean_instance(func_or_name))
+        return func_or_name
+    else:
+
+        def wrapper(func: Callable[[Any], T], /):
+            tp = func.__annotations__.get('return', None)
+            assert (
+                tp
+            ), f'The function "{func.__name__}" decorated by Bean decorator must have a return type annotation.'
+            dep_store.add_dep(tp, func_or_name, create_bean_instance(func))
+            return func
 
         return wrapper

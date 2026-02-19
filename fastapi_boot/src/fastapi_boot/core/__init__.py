@@ -1,4 +1,4 @@
-from .DI import Injectable
+from .DI import Injectable, Bean
 from .helper import provide_app, use_dep, use_http_middleware, use_ws_middleware, inject
 from .routing import (
     Controller,
